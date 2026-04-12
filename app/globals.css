@@ -1,0 +1,286 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* === Brand === */
+  --c-teal-900: #042F2E;
+  --c-teal-700: #0F766E;
+  --c-teal-500: #14B8A6;
+  --c-teal-100: #CCFBF1;
+  --c-teal-50: #F0FDFA;
+  
+  /* === Accent === */
+  --c-saffron: #F97316;
+  --c-saffron-lt: #FFF7ED;
+  
+  /* === Surfaces === */
+  --c-surface: #F8FAFC;
+  --c-card: #FFFFFF;
+  --c-card-hover: #FAFFFE;
+  --c-border: #E2E8F0;
+  --c-border-soft: #F1F5F9;
+  
+  /* === Text === */
+  --c-text-primary: #0F172A;
+  --c-text-secondary: #475569;
+  --c-text-muted: #94A3B8;
+  --c-text-inverse: #FFFFFF;
+  
+  /* === Semantic === */
+  --c-success: #059669;
+  --c-warning: #D97706;
+  --c-danger: #DC2626;
+  --c-info: #2563EB;
+  
+  /* === Confidence Gauge === */
+  --c-conf-high: #059669;
+  --c-conf-mid: #D97706;
+  --c-conf-low: #DC2626;
+  
+  /* === Cost Component Colors === */
+  --c-cost-procedure: #0D9488;
+  --c-cost-doctor: #6366F1;
+  --c-cost-stay: #8B5CF6;
+  --c-cost-diagnostics: #F59E0B;
+  --c-cost-medicines: #10B981;
+  --c-cost-contingency: #EF4444;
+  
+  /* === Hospital Tier === */
+  --c-tier-premium: #7C3AED;
+  --c-tier-mid: #2563EB;
+  --c-tier-budget: #059669;
+  
+  /* Healthcare Navigator Theme */
+  --background: oklch(0.98 0.005 240);
+  --foreground: oklch(0.15 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.02 260);
+  
+  /* Primary: Teal */
+  --primary: oklch(0.55 0.15 175);
+  --primary-foreground: oklch(1 0 0);
+  
+  /* Secondary: Light Gray */
+  --secondary: oklch(0.96 0.005 240);
+  --secondary-foreground: oklch(0.25 0.02 260);
+  
+  /* Muted */
+  --muted: oklch(0.96 0.005 240);
+  --muted-foreground: oklch(0.5 0.02 260);
+  
+  /* Accent: Indigo */
+  --accent: oklch(0.55 0.2 275);
+  --accent-foreground: oklch(1 0 0);
+  
+  /* Warning: Amber for disclaimer */
+  --warning: oklch(0.8 0.15 80);
+  --warning-foreground: oklch(0.3 0.08 60);
+  
+  /* Success: Emerald */
+  --success: oklch(0.65 0.18 155);
+  --success-foreground: oklch(1 0 0);
+  
+  /* Destructive: Red */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
+  
+  --border: oklch(0.9 0.005 240);
+  --input: oklch(0.92 0.005 240);
+  --ring: oklch(0.55 0.15 175);
+  
+  /* Cost breakdown colors */
+  --chart-1: oklch(0.55 0.15 175);  /* Procedure - Teal */
+  --chart-2: oklch(0.55 0.2 275);   /* Doctor - Indigo */
+  --chart-3: oklch(0.6 0.18 295);   /* Stay - Violet */
+  --chart-4: oklch(0.75 0.15 80);   /* Diagnostics - Amber */
+  --chart-5: oklch(0.65 0.18 155);  /* Medicines - Emerald */
+  --chart-6: oklch(0.65 0.2 40);    /* Contingency - Orange */
+  
+  /* Spacing, Radius & Shadows */
+  --radius: 0.75rem;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+  
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.08);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.18);
+  --shadow-drawer: -4px 0 40px rgba(0,0,0,0.10);
+  
+  /* Motion Tokens */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --duration-reveal: 600ms;
+  
+  /* Sidebar */
+  --sidebar: oklch(0.98 0.005 240);
+  --sidebar-foreground: oklch(0.15 0.02 260);
+  --sidebar-primary: oklch(0.55 0.15 175);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0.005 240);
+  --sidebar-accent-foreground: oklch(0.25 0.02 260);
+  --sidebar-border: oklch(0.9 0.005 240);
+  --sidebar-ring: oklch(0.55 0.15 175);
+}
+
+.dark {
+  --background: oklch(0.15 0.02 260);
+  --foreground: oklch(0.95 0.005 240);
+  --card: oklch(0.2 0.02 260);
+  --card-foreground: oklch(0.95 0.005 240);
+  --popover: oklch(0.2 0.02 260);
+  --popover-foreground: oklch(0.95 0.005 240);
+  --primary: oklch(0.6 0.15 175);
+  --primary-foreground: oklch(0.15 0.02 260);
+  --secondary: oklch(0.25 0.02 260);
+  --secondary-foreground: oklch(0.95 0.005 240);
+  --muted: oklch(0.25 0.02 260);
+  --muted-foreground: oklch(0.65 0.02 260);
+  --accent: oklch(0.6 0.2 275);
+  --accent-foreground: oklch(0.95 0.005 240);
+  --warning: oklch(0.75 0.15 80);
+  --warning-foreground: oklch(0.2 0.05 60);
+  --success: oklch(0.6 0.15 155);
+  --success-foreground: oklch(0.95 0.005 240);
+  --destructive: oklch(0.5 0.2 25);
+  --destructive-foreground: oklch(0.95 0.005 240);
+  --border: oklch(0.3 0.02 260);
+  --input: oklch(0.25 0.02 260);
+  --ring: oklch(0.6 0.15 175);
+  --chart-1: oklch(0.6 0.15 175);
+  --chart-2: oklch(0.6 0.2 275);
+  --chart-3: oklch(0.65 0.18 295);
+  --chart-4: oklch(0.7 0.15 80);
+  --chart-5: oklch(0.6 0.15 155);
+  --chart-6: oklch(0.6 0.18 40);
+  --sidebar: oklch(0.18 0.02 260);
+  --sidebar-foreground: oklch(0.95 0.005 240);
+  --sidebar-primary: oklch(0.6 0.15 175);
+  --sidebar-primary-foreground: oklch(0.15 0.02 260);
+  --sidebar-accent: oklch(0.25 0.02 260);
+  --sidebar-accent-foreground: oklch(0.95 0.005 240);
+  --sidebar-border: oklch(0.3 0.02 260);
+  --sidebar-ring: oklch(0.6 0.15 175);
+}
+
+@theme inline {
+  --font-sans: 'Sora', 'DM Sans', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', 'Geist Mono', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0 0);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.7 0 0);
+}
+
+/* Animated cost bar */
+@keyframes fillBar {
+  from { width: 0; }
+  to { width: var(--bar-width); }
+}
+
+.cost-bar-animate {
+  animation: fillBar var(--duration-reveal) var(--ease-smooth) forwards;
+}
+
+/* Confidence gauge animation */
+@keyframes drawArc {
+  from { stroke-dashoffset: var(--arc-length); }
+  to { stroke-dashoffset: var(--target-offset); }
+}
+
+.confidence-arc-animate {
+  animation: drawArc 1s var(--ease-smooth) forwards;
+}
+
+/* Typing indicator pulse */
+@keyframes pulse-dot {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+.typing-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Pathway step connector */
+.pathway-connector {
+  background: linear-gradient(90deg, var(--c-teal-500) 0%, var(--c-teal-100) 100%);
+}

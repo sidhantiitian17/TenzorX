@@ -18,6 +18,12 @@ const DATA_SOURCES = [
   'Patient review intelligence (public sources)',
 ];
 
+const ONCOLOGY_WEB_SOURCES = [
+  'Balco Medical Centre official oncology information (balcomedicalcentre.com)',
+  'Ramkrishna CARE Hospitals Raipur oncology information (carehospitals.com)',
+  'AIIMS Raipur oncology and radiation oncology department information (aiimsraipur.edu.in)',
+];
+
 export const suggestionChips = [
   'Knee replacement near Nagpur under Rs 2 lakh',
   'Heart bypass under Rs 3 lakh',
@@ -54,6 +60,13 @@ const pathwayByProcedure: Record<string, PathwayStep[]> = {
     { step: 3, name: 'Procedure', duration: '30-60 min', cost_range: { min: 20000, max: 45000 } },
     { step: 4, name: 'Recovery & drops', duration: '1-2 weeks', cost_range: { min: 2000, max: 6000 } },
   ],
+  'Oncology Evaluation & Treatment Planning': [
+    { step: 1, name: 'Oncology consultation', duration: '1 day', cost_range: { min: 1500, max: 5000 } },
+    { step: 2, name: 'Staging diagnostics', duration: '2-4 days', cost_range: { min: 18000, max: 50000 } },
+    { step: 3, name: 'Tumor board treatment planning', duration: '1-2 days', cost_range: { min: 10000, max: 30000 } },
+    { step: 4, name: 'Initial treatment cycle', duration: '3-7 days', cost_range: { min: 90000, max: 220000 } },
+    { step: 5, name: 'Follow-up and supportive care', duration: '2-4 weeks', cost_range: { min: 12000, max: 40000 } },
+  ],
 };
 
 const confidenceFactors: ConfidenceFactor[] = [
@@ -87,6 +100,11 @@ export const appointmentChecklists = {
     questions: ['Is a stent included?', 'Will ICU observation be needed?', 'What is the expected recovery time?'],
     forms: ['Patient Registration Form', 'Consent for Procedure Form'],
   },
+  'Oncology Evaluation & Treatment Planning': {
+    documents: ['Aadhar card / photo ID', 'Biopsy / pathology reports', 'PET-CT / MRI / CT scans', 'Previous treatment summaries', 'Insurance / scheme documents'],
+    questions: ['What stage is the cancer and what are treatment options?', 'What is the intent of treatment and expected outcomes?', 'What side-effects should we prepare for and how are they managed?'],
+    forms: ['Patient Registration Form', 'Oncology Treatment Consent', 'Chemotherapy Day-Care Consent'],
+  },
 };
 
 const procedureCatalog = {
@@ -117,6 +135,13 @@ const procedureCatalog = {
     icd10Label: 'Cataract, unspecified',
     snomed: '193570009',
     category: 'Ophthalmology',
+  },
+  cancer: {
+    procedure: 'Oncology Evaluation & Treatment Planning',
+    icd10: 'C80.1',
+    icd10Label: 'Malignant neoplasm, unspecified',
+    snomed: '363346000',
+    category: 'Oncology',
   },
 } as const;
 
@@ -158,6 +183,14 @@ const baseBreakdown: Record<string, CostBreakdown> = {
     diagnostics: { min: 2000, max: 6000 },
     medicines: { min: 1000, max: 4000 },
     contingency: { min: 2000, max: 8000 },
+  },
+  'Oncology Evaluation & Treatment Planning': {
+    procedure: { min: 80000, max: 150000 },
+    doctor_fees: { min: 12000, max: 25000 },
+    hospital_stay: { min: 15000, max: 35000, nights: '2-5' },
+    diagnostics: { min: 20000, max: 45000 },
+    medicines: { min: 15000, max: 50000 },
+    contingency: { min: 10000, max: 30000 },
   },
 };
 
@@ -378,6 +411,108 @@ export const mockHospitals: Hospital[] = [
     wait_time_days: 4,
   },
   {
+    id: 'h-raipur-balco',
+    name: 'BALCO Medical Centre',
+    location: 'Atal Nagar (Nava Raipur), Chhattisgarh',
+    city: 'Raipur',
+    distance_km: 12.4,
+    rating: 4.6,
+    review_count: 198,
+    tier: 'premium',
+    nabh_accredited: true,
+    specializations: ['Medical Oncology', 'Radiation Oncology', 'Surgical Oncology'],
+    strengths: ['Dedicated cancer center', 'Radiation oncology expertise', 'Comprehensive oncology services'],
+    risk_flags: ['Advanced precision therapies may increase total package cost'],
+    cost_range: { min: 180000, max: 340000 },
+    doctors: [
+      {
+        id: 'd-010',
+        name: 'Dr. Priya Menon',
+        specialization: 'Medical Oncology',
+        experience_years: 15,
+        rating: 4.7,
+        fee_min: 1500,
+        fee_max: 3200,
+      },
+    ],
+    reviews: [
+      { id: 'r-012', sentiment: 'positive', excerpt: 'Detailed oncology counseling and coordinated care pathway.' },
+    ],
+    coordinates: { lat: 21.1617, lng: 81.7861 },
+    rank_score: 92,
+    rank_signals: {
+      clinical_capability: 94,
+      reputation: 88,
+      accessibility: 76,
+      affordability: 72,
+    },
+    sentiment_data: {
+      positive_pct: 81,
+      themes: [
+        { theme: 'Cancer care outcomes', mentions: 64, positive_pct: 84 },
+        { theme: 'Doctor communication', mentions: 58, positive_pct: 82 },
+        { theme: 'Radiation therapy support', mentions: 41, positive_pct: 79 },
+      ],
+      sample_quotes: [
+        { text: 'Treatment roadmap was explained clearly, step by step.', sentiment: 'positive' },
+      ],
+    },
+    procedure_volume: 'high',
+    icu_available: true,
+    wait_time_days: 4,
+  },
+  {
+    id: 'h-raipur-care-onco',
+    name: 'Ramkrishna CARE Hospitals',
+    location: 'Pachpedi Naka, Raipur, Chhattisgarh',
+    city: 'Raipur',
+    distance_km: 6.1,
+    rating: 4.4,
+    review_count: 256,
+    tier: 'mid',
+    nabh_accredited: true,
+    specializations: ['Medical Oncology', 'Hemato Oncology', 'Surgical Oncology'],
+    strengths: ['Comprehensive oncology unit', 'Tumor board planning', 'Strong specialist network'],
+    risk_flags: ['Complex regimens may need repeated day-care visits'],
+    cost_range: { min: 150000, max: 300000 },
+    doctors: [
+      {
+        id: 'd-011',
+        name: 'Dr. Sanjay Agrawal',
+        specialization: 'Hemato Oncology',
+        experience_years: 13,
+        rating: 4.5,
+        fee_min: 1400,
+        fee_max: 2800,
+      },
+    ],
+    reviews: [
+      { id: 'r-013', sentiment: 'positive', excerpt: 'Good oncology team coordination and timely diagnostics.' },
+    ],
+    coordinates: { lat: 21.2441, lng: 81.6332 },
+    rank_score: 88,
+    rank_signals: {
+      clinical_capability: 89,
+      reputation: 85,
+      accessibility: 84,
+      affordability: 78,
+    },
+    sentiment_data: {
+      positive_pct: 76,
+      themes: [
+        { theme: 'Cancer treatment support', mentions: 72, positive_pct: 79 },
+        { theme: 'Diagnostics and planning', mentions: 49, positive_pct: 74 },
+        { theme: 'Staff behavior', mentions: 44, positive_pct: 73 },
+      ],
+      sample_quotes: [
+        { text: 'Oncology consult and treatment plan were handled quickly.', sentiment: 'positive' },
+      ],
+    },
+    procedure_volume: 'high',
+    icu_available: true,
+    wait_time_days: 3,
+  },
+  {
     id: 'h-raipur-1',
     name: 'Raipur Heartline Multispecialty',
     location: 'Shankar Nagar, Raipur, Chhattisgarh',
@@ -394,6 +529,13 @@ export const mockHospitals: Hospital[] = [
     doctors: [{ id: 'd-005', name: 'Dr. Abhishek Rao', specialization: 'Interventional Cardiology', experience_years: 13, rating: 4.5, fee_min: 1200, fee_max: 2800 }],
     reviews: [{ id: 'r-007', sentiment: 'positive', excerpt: 'Strong post-op monitoring and counseling.' }],
     coordinates: { lat: 21.2514, lng: 81.6296 },
+    rank_score: 74,
+    rank_signals: {
+      clinical_capability: 81,
+      reputation: 77,
+      accessibility: 84,
+      affordability: 70,
+    },
   },
   {
     id: 'h-bhopal-1',
@@ -472,9 +614,36 @@ export const mockHospitals: Hospital[] = [
 function detectProcedure(query: string): (typeof procedureCatalog)[keyof typeof procedureCatalog] {
   const q = query.toLowerCase();
   if (q.includes('knee') || q.includes('arthroplasty')) return procedureCatalog.knee;
+  if (q.includes('cancer') || q.includes('oncology') || q.includes('tumor') || q.includes('chemo') || q.includes('chemotherapy')) return procedureCatalog.cancer;
   if (q.includes('bypass') || q.includes('cabg')) return procedureCatalog.cabg;
   if (q.includes('cataract')) return procedureCatalog.cataract;
   return procedureCatalog.angioplasty;
+}
+
+function isHospitalRelevantToProcedure(
+  hospital: Hospital,
+  procedure: (typeof procedureCatalog)[keyof typeof procedureCatalog]
+): boolean {
+  const haystack = [hospital.name, ...hospital.specializations, ...hospital.strengths].join(' ').toLowerCase();
+
+  if (procedure.category === 'Oncology') {
+    return ['onco', 'cancer', 'tumor', 'radiation', 'chemo', 'haemato'].some((keyword) =>
+      haystack.includes(keyword)
+    );
+  }
+  if (procedure.category === 'Orthopedic Surgery') {
+    return ['ortho', 'joint', 'knee', 'arthroplasty'].some((keyword) => haystack.includes(keyword));
+  }
+  if (procedure.procedure === 'CABG / Bypass') {
+    return ['cardiac', 'bypass', 'heart', 'cardio'].some((keyword) => haystack.includes(keyword));
+  }
+  if (procedure.category === 'Cardiology') {
+    return ['cardio', 'heart', 'angioplasty'].some((keyword) => haystack.includes(keyword));
+  }
+  if (procedure.category === 'Ophthalmology') {
+    return ['eye', 'ophthal', 'cataract'].some((keyword) => haystack.includes(keyword));
+  }
+  return true;
 }
 
 export function generateMockSearchData(query: string, location: string): SearchData {
@@ -482,10 +651,26 @@ export function generateMockSearchData(query: string, location: string): SearchD
   const base = baseBreakdown[procedure.procedure] ?? baseBreakdown.Angioplasty;
   const overallConfidence = 0.74;
 
-  const hospitalPool = mockHospitals
-    .filter((h) => h.city.toLowerCase() === location.toLowerCase())
-    .slice(0, 3);
-  const hospitals = (hospitalPool.length > 0 ? hospitalPool : mockHospitals.slice(0, 3)).map((h) => ({
+  const cityHospitals = mockHospitals.filter((h) => h.city.toLowerCase() === location.toLowerCase());
+  const relevantCityHospitals = cityHospitals.filter((h) => isHospitalRelevantToProcedure(h, procedure));
+  const relevantGlobalHospitals = mockHospitals.filter((h) => isHospitalRelevantToProcedure(h, procedure));
+
+  const hospitalPool =
+    relevantCityHospitals.length > 0
+      ? relevantCityHospitals
+      : cityHospitals.length > 0
+      ? cityHospitals
+      : relevantGlobalHospitals.length > 0
+      ? relevantGlobalHospitals
+      : mockHospitals;
+
+  const prioritizedHospitalPool = [...hospitalPool].sort((a, b) => {
+    const aScore = (a.rank_score ?? 0) + a.rating * 10;
+    const bScore = (b.rank_score ?? 0) + b.rating * 10;
+    return bScore - aScore;
+  });
+
+  const hospitals = prioritizedHospitalPool.slice(0, 3).map((h) => ({
     ...h,
     doctors: h.doctors.map((doctor, index) => ({
       ...doctor,
@@ -582,7 +767,10 @@ export function generateMockSearchData(query: string, location: string): SearchD
         severity: 'high',
       },
     ],
-    data_sources: DATA_SOURCES,
+    data_sources:
+      procedure.category === 'Oncology'
+        ? [...DATA_SOURCES, ...ONCOLOGY_WEB_SOURCES]
+        : DATA_SOURCES,
   };
 }
 

@@ -81,8 +81,10 @@ export default function HomePage() {
 
       const estimate = buildCostEstimate(searchData);
       const lenderRisk = buildLenderRiskProfile(estimate);
+      const hospitalCount = searchData.hospitals.length;
+      const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
 
-      let response = `I interpreted your query as **${searchData.procedure}** and found **${searchData.hospitals.length} hospitals** in **${searchData.query_location}**.`;
+      let response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.`;
       response += `\n\nEstimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.`;
 
       if (isEmergency) {

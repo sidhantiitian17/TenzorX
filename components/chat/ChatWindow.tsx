@@ -35,9 +35,9 @@ export function ChatWindow({
   }, [messages, isLoading]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-linear-to-b from-background via-background to-secondary/20">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="chat-scrollbar flex-1 overflow-x-hidden overflow-y-auto">
         {showEmergency && (
           <div className="mx-auto mt-4 w-full max-w-3xl px-4">
             <EmergencyBanner onDismiss={onDismissEmergency} />
@@ -46,7 +46,7 @@ export function ChatWindow({
         {!hasMessages ? (
           <HeroSection onSelectSuggestion={onSendMessage} />
         ) : (
-          <div className="p-4 space-y-4 max-w-3xl mx-auto">
+          <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-6 pt-5 sm:px-6">
             {messages.map((message, index) => (
               <MessageBubble
                 key={message.id}
@@ -55,8 +55,8 @@ export function ChatWindow({
               />
             ))}
             {isLoading && (
-              <div className="flex gap-3">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="flex items-end gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <svg
                     className="h-4 w-4 text-primary"
                     viewBox="0 0 24 24"
@@ -67,7 +67,7 @@ export function ChatWindow({
                     <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                   </svg>
                 </div>
-                <div className="bg-card border border-border shadow-sm rounded-2xl rounded-bl-md">
+                <div className="rounded-2xl rounded-bl-md border border-border bg-card/95 shadow-sm">
                   <TypingIndicator />
                 </div>
               </div>

@@ -247,6 +247,50 @@
   background: oklch(0.7 0 0);
 }
 
+/* Dedicated chat message scrollbar */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.72 0.015 245 / 0.7) transparent;
+  scrollbar-gutter: stable both-edges;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.72 0.015 245 / 0.7);
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0.02 250 / 0.85);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.dark .chat-scrollbar {
+  scrollbar-color: oklch(0.5 0.02 255 / 0.8) transparent;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.5 0.02 255 / 0.8);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.64 0.03 255 / 0.95);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
 /* Animated cost bar */
 @keyframes fillBar {
   from { width: 0; }

@@ -205,6 +205,35 @@ function buildAvailableSlots(waitDays: number): string[] {
   });
 }
 
+function clampConfidence(value: number): number {
+  return Math.max(0.6, Math.min(0.9, Math.round(value * 100) / 100));
+}
+
+function confidenceJitterFromId(id: string): number {
+  const hash = Array.from(id).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  // Keep confidence spread subtle: -1.5 to +1.5 percentage points.
+  return ((hash % 7) - 3) * 0.005;
+}
+
+function deriveHospitalConfidence(hospital: Hospital, baseConfidence: number): number {
+  const ratingAdjustment = (hospital.rating - 4) * 0.02;
+  const distanceAdjustment = -Math.min(hospital.distance_km, 12) * 0.002;
+  const nabhAdjustment = hospital.nabh_accredited ? 0.01 : -0.005;
+  const tierAdjustment =
+    hospital.tier === 'premium' ? 0.008 : hospital.tier === 'budget' ? -0.006 : 0;
+  const rankAdjustment = hospital.rank_score ? (hospital.rank_score - 80) * 0.0007 : 0;
+
+  return clampConfidence(
+    baseConfidence +
+      ratingAdjustment +
+      distanceAdjustment +
+      nabhAdjustment +
+      tierAdjustment +
+      rankAdjustment +
+      confidenceJitterFromId(hospital.id)
+  );
+}
+
 export const mockHospitals: Hospital[] = [
   {
     id: 'h-abc-ortho',
@@ -451,6 +480,7 @@ function detectProcedure(query: string): (typeof procedureCatalog)[keyof typeof 
 export function generateMockSearchData(query: string, location: string): SearchData {
   const procedure = detectProcedure(query);
   const base = baseBreakdown[procedure.procedure] ?? baseBreakdown.Angioplasty;
+  const overallConfidence = 0.74;
 
   const hospitalPool = mockHospitals
     .filter((h) => h.city.toLowerCase() === location.toLowerCase())
@@ -483,6 +513,7 @@ export function generateMockSearchData(query: string, location: string): SearchD
     procedure_volume: h.procedure_volume ?? 'medium',
     icu_available: h.icu_available ?? true,
     wait_time_days: h.wait_time_days ?? 3,
+    confidence: h.confidence ?? deriveHospitalConfidence(h, overallConfidence),
   }));
 
   const midHospital = hospitals.find((h) => h.tier === 'mid') ?? hospitals[0];
@@ -522,7 +553,7 @@ export function generateMockSearchData(query: string, location: string): SearchD
     category: procedure.category,
     query_location: location,
     cost_range: { min: total.min, max: total.max },
-    confidence: 0.74,
+    confidence: overallConfidence,
     cost_breakdown: breakdown,
     comorbidity_warnings: [],
     hospitals,

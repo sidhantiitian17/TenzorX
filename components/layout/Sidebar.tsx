@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import {
@@ -52,12 +52,27 @@ export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSe
 
   const menuItems = [
     { icon: History, label: 'History', badge: state.conversation.length > 0 ? state.conversation.length : undefined },
-    { icon: Bookmark, label: 'Saved Results', badge: undefined },
+    { icon: Bookmark, label: 'Saved Results', badge: state.savedHospitals.length > 0 ? state.savedHospitals.length : undefined },
     { icon: Calendar, label: 'My Appointment Requests', badge: state.appointmentRequests.length > 0 ? state.appointmentRequests.length : undefined },
     { icon: User, label: 'Patient Profile', badge: state.patientProfile ? 1 : undefined },
     { icon: Landmark, label: state.lenderMode ? 'Lender Mode: ON' : 'Lender / Insurer Mode', badge: undefined },
     { icon: Settings, label: 'Settings', badge: undefined },
   ];
+
+  const savedHospitalNames = state.savedHospitals.map((hospitalId) => {
+    const hospital = state.searchResults.find((item) => item.id === hospitalId);
+    return hospital?.name ?? hospitalId;
+  });
+
+  const openSavedResults = () => {
+    if (state.selectedForCompare.length > 0 && !state.compareDrawerOpen) {
+      dispatch({ type: 'TOGGLE_COMPARE_DRAWER' });
+      return;
+    }
+    if (!state.resultsPanelOpen && state.searchResults.length > 0) {
+      dispatch({ type: 'TOGGLE_RESULTS_PANEL' });
+    }
+  };
 
   // Mobile overlay
   if (state.sidebarOpen) {
@@ -94,12 +109,17 @@ export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSe
             toggleDarkMode={toggleDarkMode}
             conversation={state.conversation}
             appointmentRequests={state.appointmentRequests}
+            savedHospitalNames={savedHospitalNames}
             onToggleLenderMode={onToggleLenderMode}
             onOpenProfile={onOpenProfile}
             onOpenSettings={onOpenSettings}
             onLoadQuery={onLoadQuery}
+            onOpenSavedResults={openSavedResults}
+            onToggleResultsPanel={() => dispatch({ type: 'TOGGLE_RESULTS_PANEL' })}
+            onClearConversation={() => dispatch({ type: 'CLEAR_CONVERSATION' })}
             onUpdateAppointmentStatus={(id, status) => dispatch({ type: 'SET_APPOINTMENT_REQUEST_STATUS', payload: { id, status } })}
             onRemoveAppointmentRequest={(id) => dispatch({ type: 'REMOVE_APPOINTMENT_REQUEST', payload: id })}
+            onRequestCloseSidebar={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
           />
         </motion.aside>
       </>
@@ -133,10 +153,14 @@ export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSe
           toggleDarkMode={toggleDarkMode}
           conversation={state.conversation}
           appointmentRequests={state.appointmentRequests}
+          savedHospitalNames={savedHospitalNames}
           onToggleLenderMode={onToggleLenderMode}
           onOpenProfile={onOpenProfile}
           onOpenSettings={onOpenSettings}
           onLoadQuery={onLoadQuery}
+          onOpenSavedResults={openSavedResults}
+          onToggleResultsPanel={() => dispatch({ type: 'TOGGLE_RESULTS_PANEL' })}
+          onClearConversation={() => dispatch({ type: 'CLEAR_CONVERSATION' })}
           onUpdateAppointmentStatus={(id, status) => dispatch({ type: 'SET_APPOINTMENT_REQUEST_STATUS', payload: { id, status } })}
           onRemoveAppointmentRequest={(id) => dispatch({ type: 'REMOVE_APPOINTMENT_REQUEST', payload: id })}
         />
@@ -170,10 +194,14 @@ export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSe
           toggleDarkMode={toggleDarkMode}
           conversation={state.conversation}
           appointmentRequests={state.appointmentRequests}
+          savedHospitalNames={savedHospitalNames}
           onToggleLenderMode={onToggleLenderMode}
           onOpenProfile={onOpenProfile}
           onOpenSettings={onOpenSettings}
           onLoadQuery={onLoadQuery}
+          onOpenSavedResults={openSavedResults}
+          onToggleResultsPanel={() => dispatch({ type: 'TOGGLE_RESULTS_PANEL' })}
+          onClearConversation={() => dispatch({ type: 'CLEAR_CONVERSATION' })}
           onUpdateAppointmentStatus={(id, status) => dispatch({ type: 'SET_APPOINTMENT_REQUEST_STATUS', payload: { id, status } })}
           onRemoveAppointmentRequest={(id) => dispatch({ type: 'REMOVE_APPOINTMENT_REQUEST', payload: id })}
         />
@@ -189,12 +217,17 @@ interface SidebarContentProps {
   toggleDarkMode: () => void;
   conversation: { id: string; content: string; timestamp: Date; role: string }[];
   appointmentRequests: AppointmentRequest[];
+  savedHospitalNames: string[];
   onToggleLenderMode?: () => void;
   onOpenProfile?: () => void;
   onOpenSettings?: () => void;
   onLoadQuery?: (query: string) => void;
+  onOpenSavedResults?: () => void;
+  onToggleResultsPanel?: () => void;
+  onClearConversation?: () => void;
   onUpdateAppointmentStatus?: (id: string, status: AppointmentStatus) => void;
   onRemoveAppointmentRequest?: (id: string) => void;
+  onRequestCloseSidebar?: () => void;
 }
 
 function SidebarContent({
@@ -204,26 +237,50 @@ function SidebarContent({
   toggleDarkMode,
   conversation,
   appointmentRequests,
+  savedHospitalNames,
   onToggleLenderMode,
   onOpenProfile,
   onOpenSettings,
   onLoadQuery,
+  onOpenSavedResults,
+  onToggleResultsPanel,
+  onClearConversation,
   onUpdateAppointmentStatus,
   onRemoveAppointmentRequest,
+  onRequestCloseSidebar,
 }: SidebarContentProps) {
+  const [activeSection, setActiveSection] = useState<'history' | 'saved' | 'appointments' | 'settings'>('history');
+  const historySectionRef = useRef<HTMLDivElement>(null);
+  const savedSectionRef = useRef<HTMLDivElement>(null);
+  const appointmentsSectionRef = useRef<HTMLDivElement>(null);
+  const settingsSectionRef = useRef<HTMLDivElement>(null);
+
+  const focusSection = (
+    section: 'history' | 'saved' | 'appointments' | 'settings',
+    ref: React.RefObject<HTMLDivElement | null>
+  ) => {
+    setActiveSection(section);
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const handleMenuClick = (label: string) => {
     if (label.includes('Lender')) {
       onToggleLenderMode?.();
+      onRequestCloseSidebar?.();
     } else if (label === 'Patient Profile') {
       onOpenProfile?.();
+      onRequestCloseSidebar?.();
     } else if (label === 'Settings') {
       onOpenSettings?.();
+      focusSection('settings', settingsSectionRef);
     } else if (label === 'History') {
-      // History button - could show a history panel or modal
-      console.log('History clicked');
+      focusSection('history', historySectionRef);
     } else if (label === 'Saved Results') {
-      // Saved results button
-      console.log('Saved Results clicked');
+      focusSection('saved', savedSectionRef);
+      onOpenSavedResults?.();
+      onRequestCloseSidebar?.();
+    } else if (label === 'My Appointment Requests') {
+      focusSection('appointments', appointmentsSectionRef);
     }
   };
   return (
@@ -256,7 +313,13 @@ function SidebarContent({
 
       {/* Recent queries */}
       {!collapsed && conversation.length > 0 && (
-        <div className="mt-6 px-3">
+        <div
+          ref={historySectionRef}
+          className={cn(
+            'mt-6 rounded-lg px-3 py-1 transition-colors',
+            activeSection === 'history' && 'bg-sidebar-accent/40 ring-1 ring-primary/30'
+          )}
+        >
           <h3 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             Recent Queries
           </h3>
@@ -288,7 +351,40 @@ function SidebarContent({
       )}
 
       {!collapsed && (
-        <div className="mt-6 px-3">
+        <div
+          ref={savedSectionRef}
+          className={cn(
+            'mt-4 rounded-lg px-3 py-1 transition-colors',
+            activeSection === 'saved' && 'bg-sidebar-accent/40 ring-1 ring-primary/30'
+          )}
+        >
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Saved Results
+          </h3>
+          {savedHospitalNames.length === 0 ? (
+            <p className="rounded-md border border-dashed border-sidebar-border px-2 py-2 text-xs text-muted-foreground">
+              No saved results yet.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {savedHospitalNames.slice(0, 6).map((name) => (
+                <p key={name} className="truncate rounded-md border border-sidebar-border bg-sidebar-accent/30 px-2 py-1.5 text-xs text-sidebar-foreground">
+                  {name}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!collapsed && (
+        <div
+          ref={appointmentsSectionRef}
+          className={cn(
+            'mt-4 rounded-lg px-3 py-1 transition-colors',
+            activeSection === 'appointments' && 'bg-sidebar-accent/40 ring-1 ring-primary/30'
+          )}
+        >
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             My Appointment Requests
           </h3>
@@ -346,6 +442,28 @@ function SidebarContent({
                 ))}
             </div>
           )}
+        </div>
+      )}
+
+      {!collapsed && activeSection === 'settings' && (
+        <div ref={settingsSectionRef} className="mt-4 px-3">
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Settings Actions
+          </h3>
+          <div className="space-y-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30 p-2">
+            <button
+              onClick={onToggleResultsPanel}
+              className="w-full rounded-md bg-background px-2 py-1.5 text-left text-xs text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              Toggle Results Panel
+            </button>
+            <button
+              onClick={onClearConversation}
+              className="w-full rounded-md bg-background px-2 py-1.5 text-left text-xs text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              Clear Conversation
+            </button>
+          </div>
         </div>
       )}
 

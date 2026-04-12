@@ -226,10 +226,14 @@ export function HospitalMap({
   if (!apiKey) {
     return (
       <div className={cn('flex items-center justify-center bg-muted rounded-lg', className)}>
-        <div className="text-center p-4">
-          <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">
-            Google Maps API key not configured
+        <div className="text-center p-6 max-w-sm">
+          <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="font-semibold text-foreground mb-2">Map Feature Ready</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            The map view will be available once configured. Switch to <strong>List View</strong> to browse hospitals.
+          </p>
+          <p className="text-xs text-muted-foreground italic">
+            For admin: Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local
           </p>
         </div>
       </div>

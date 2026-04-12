@@ -5,6 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useAppDispatch, useAppState, useCompare } from '@/lib/context';
 import { buildCostEstimate, buildLenderRiskProfile, generateMockSearchData } from '@/lib/mockData';
 import type { AppState, Hospital, Message } from '@/types';
+import { cn } from '@/lib/utils';
 
 import { DisclaimerBanner } from '@/components/shared/DisclaimerBanner';
 import { Header } from '@/components/layout/Header';
@@ -35,6 +36,7 @@ export default function HomePage() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
   const [showEmergency, setShowEmergency] = useState(false);
+  const [resultsExpanded, setResultsExpanded] = useState(false);
 
   const selectedHospitals = useMemo(
     () => state.searchResults.filter((h: { id: string }) => selectedIds.includes(h.id)),
@@ -153,11 +155,18 @@ export default function HomePage() {
             selectedIds={selectedIds}
             onToggleCompare={toggleCompare}
             isOpen={state.resultsPanelOpen}
+            expanded={resultsExpanded}
+            onToggleExpanded={() => setResultsExpanded((prev) => !prev)}
             clinicalMapping={state.clinicalMapping}
             riskAdjustments={state.costEstimate?.risk_adjustments || []}
             dataSources={state.costEstimate?.data_sources || []}
             onCorrectMapping={() => handleSendMessage('Actually, I meant...')}
-            className="hidden w-88 max-w-lg lg:flex xl:w-md 2xl:w-lg"
+            className={cn(
+              'hidden lg:flex',
+              resultsExpanded
+                ? 'w-[56vw] max-w-6xl'
+                : 'w-88 max-w-lg xl:w-md 2xl:w-lg'
+            )}
           />
         )}
       </div>

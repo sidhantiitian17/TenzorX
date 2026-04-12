@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, Map, List } from 'lucide-react';
+import { X, Info, Map, List, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import type { ClinicalMapping, CostEstimate, Hospital, RiskAdjustment } from '@/types';
 import { HospitalList } from './HospitalList';
 import { HospitalMap } from './HospitalMap';
@@ -27,6 +27,8 @@ interface ResultsPanelProps {
   onToggleCompare: (id: string) => void;
   isOpen: boolean;
   onClose?: () => void;
+  expanded?: boolean;
+  onToggleExpanded?: () => void;
   className?: string;
   clinicalMapping?: ClinicalMapping | null;
   riskAdjustments?: RiskAdjustment[];
@@ -41,6 +43,8 @@ export function ResultsPanel({
   onToggleCompare,
   isOpen,
   onClose,
+  expanded = false,
+  onToggleExpanded,
   className,
   clinicalMapping,
   riskAdjustments = [],
@@ -79,6 +83,26 @@ export function ResultsPanel({
               </button>
             </div>
             <div className="flex items-center gap-2">
+              {onToggleExpanded && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden h-7 px-2 lg:inline-flex"
+                  onClick={onToggleExpanded}
+                >
+                  {expanded ? (
+                    <>
+                      <ChevronsRight className="mr-1 h-3.5 w-3.5" />
+                      Collapse
+                    </>
+                  ) : (
+                    <>
+                      <ChevronsLeft className="mr-1 h-3.5 w-3.5" />
+                      Expand
+                    </>
+                  )}
+                </Button>
+              )}
               {/* View Toggle */}
               {hospitals.length > 0 && (
                 <div className="flex items-center bg-muted rounded-md p-0.5">

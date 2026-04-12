@@ -28,15 +28,15 @@ export function ConfidenceScore({
   const label = getConfidenceLabel(confidence);
 
   const getColor = () => {
-    if (confidence < 0.4) return { stroke: 'stroke-destructive', text: 'text-destructive', bg: 'bg-destructive/10' };
-    if (confidence < 0.7) return { stroke: 'stroke-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' };
-    return { stroke: 'stroke-success', text: 'text-success', bg: 'bg-success/10' };
+    if (confidence < 0.4) return { stroke: 'stroke-destructive', text: 'text-red-700 dark:text-red-300', bg: 'bg-destructive/10' };
+    if (confidence < 0.7) return { stroke: 'stroke-amber-500', text: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100/70 dark:bg-amber-500/15' };
+    return { stroke: 'stroke-success', text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100/70 dark:bg-emerald-500/15' };
   };
 
   const colors = getColor();
 
   const sizes = {
-    sm: { container: 'w-16 h-9', strokeWidth: 3, fontSize: 'text-xs', radius: 14 },
+    sm: { container: 'w-20 h-10', strokeWidth: 3, fontSize: 'text-sm', radius: 14 },
     md: { container: 'w-24 h-12', strokeWidth: 3.5, fontSize: 'text-sm', radius: 20 },
     lg: { container: 'w-32 h-16', strokeWidth: 4, fontSize: 'text-base', radius: 28 },
   };
@@ -50,7 +50,7 @@ export function ConfidenceScore({
       <Tooltip>
         <TooltipTrigger asChild>
           <button className="flex flex-col items-center gap-1" onClick={onClick} aria-label={`Confidence ${percentage}% ${label}`}>
-            <div className={cn('relative', s.container)}>
+            <div className={cn('relative rounded-md px-1.5', s.container, colors.bg)}>
               {/* Background circle */}
               <svg className="w-full h-full" viewBox="0 0 100 52">
                 <title>{`Confidence ${percentage}% ${label}`}</title>
@@ -83,7 +83,7 @@ export function ConfidenceScore({
               </svg>
               {/* Percentage text */}
               <div className="absolute inset-0 flex items-end justify-center pb-0.5">
-                <span className={cn('font-semibold font-mono', s.fontSize, colors.text)}>
+                <span className={cn('font-bold tabular-nums font-mono', s.fontSize, colors.text)}>
                   {percentage}%
                 </span>
               </div>

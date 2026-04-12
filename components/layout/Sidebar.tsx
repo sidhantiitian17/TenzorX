@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from 'next-themes';
 import {
   History,
   Bookmark,
@@ -32,11 +33,18 @@ export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSe
   const state = useAppState();
   const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const darkMode = mounted && resolvedTheme === 'dark';
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
+    if (!mounted) return;
+    setTheme(darkMode ? 'light' : 'dark');
   };
 
   const menuItems = [

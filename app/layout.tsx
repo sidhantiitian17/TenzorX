@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Sora, DM_Sans, DM_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AppProvider } from '@/lib/context'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const sora = Sora({ 
@@ -61,11 +62,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${sora.variable} ${dmSans.variable} ${dmMono.variable}`}>
-      <body className="font-sans antialiased">
-        <AppProvider>
-          {children}
-        </AppProvider>
+    <html lang="en" suppressHydrationWarning className={`${sora.variable} ${dmSans.variable} ${dmMono.variable}`}>
+      <body className="font-sans antialiased bg-background text-foreground">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <AppProvider>
+            {children}
+          </AppProvider>
+        </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

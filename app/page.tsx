@@ -103,7 +103,7 @@ export default function HomePage() {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-(--c-surface)">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <DisclaimerBanner />
 
       <Header onOpenProfile={() => setProfileModalOpen(true)} />

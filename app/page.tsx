@@ -113,6 +113,12 @@ export default function HomePage() {
           onToggleLenderMode={() =>
             dispatch({ type: 'SET_LENDER_MODE', payload: !state.lenderMode })
           }
+          onOpenProfile={() => setProfileModalOpen(true)}
+          onOpenSettings={() => {
+            // Could open settings modal here
+            console.log('Settings clicked');
+          }}
+          onLoadQuery={(query: string) => handleSendMessage(query)}
         />
 
         <main className="flex min-w-0 flex-1 flex-col lg:w-[60%]">

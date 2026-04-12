@@ -23,9 +23,12 @@ import { formatTimestamp } from '@/lib/formatters';
 interface SidebarProps {
   className?: string;
   onToggleLenderMode?: () => void;
+  onOpenProfile?: () => void;
+  onOpenSettings?: () => void;
+  onLoadQuery?: (query: string) => void;
 }
 
-export function Sidebar({ className, onToggleLenderMode }: SidebarProps) {
+export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSettings, onLoadQuery }: SidebarProps) {
   const state = useAppState();
   const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(false);
@@ -79,6 +82,9 @@ export function Sidebar({ className, onToggleLenderMode }: SidebarProps) {
             toggleDarkMode={toggleDarkMode}
             conversation={state.conversation}
             onToggleLenderMode={onToggleLenderMode}
+            onOpenProfile={onOpenProfile}
+            onOpenSettings={onOpenSettings}
+            onLoadQuery={onLoadQuery}
           />
         </motion.aside>
       </>
@@ -115,6 +121,9 @@ export function Sidebar({ className, onToggleLenderMode }: SidebarProps) {
         toggleDarkMode={toggleDarkMode}
         conversation={state.conversation}
         onToggleLenderMode={onToggleLenderMode}
+        onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
+        onLoadQuery={onLoadQuery}
       />
     </aside>
   );
@@ -127,6 +136,9 @@ interface SidebarContentProps {
   toggleDarkMode: () => void;
   conversation: { id: string; content: string; timestamp: Date; role: string }[];
   onToggleLenderMode?: () => void;
+  onOpenProfile?: () => void;
+  onOpenSettings?: () => void;
+  onLoadQuery?: (query: string) => void;
 }
 
 function SidebarContent({
@@ -136,22 +148,37 @@ function SidebarContent({
   toggleDarkMode,
   conversation,
   onToggleLenderMode,
+  onOpenProfile,
+  onOpenSettings,
+  onLoadQuery,
 }: SidebarContentProps) {
+  const handleMenuClick = (label: string) => {
+    if (label.includes('Lender')) {
+      onToggleLenderMode?.();
+    } else if (label === 'Patient Profile') {
+      onOpenProfile?.();
+    } else if (label === 'Settings') {
+      onOpenSettings?.();
+    } else if (label === 'History') {
+      // History button - could show a history panel or modal
+      console.log('History clicked');
+    } else if (label === 'Saved Results') {
+      // Saved results button
+      console.log('Saved Results clicked');
+    }
+  };
   return (
     <div className="flex flex-col flex-1 py-4 overflow-hidden">
       <nav className="space-y-1 px-2">
         {menuItems.map((item) => (
           <button
             key={item.label}
-            onClick={() => {
-              if (item.label.includes('Lender')) {
-                onToggleLenderMode?.();
-              }
-            }}
+            onClick={() => handleMenuClick(item.label)}
             className={cn(
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
               collapsed && 'justify-center'
             )}
+            aria-label={item.label}
           >
             <item.icon className="h-5 w-5 shrink-0" />
             {!collapsed && (
@@ -182,7 +209,9 @@ function SidebarContent({
               .map((message) => (
                 <button
                   key={message.id}
+                  onClick={() => onLoadQuery?.(message.content)}
                   className="w-full flex items-start gap-2 px-2 py-1.5 rounded text-left text-sm hover:bg-sidebar-accent transition-colors"
+                  title={message.content}
                 >
                   <MessageSquare className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
                   <div className="flex-1 min-w-0">

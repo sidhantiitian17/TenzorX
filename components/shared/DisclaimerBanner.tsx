@@ -8,7 +8,7 @@ export function DisclaimerBanner() {
   const [isMinimized, setIsMinimized] = useState(false);
 
   return (
-    <div className="sticky top-0 z-50 border-l-4 border-amber-600 bg-(--c-saffron-lt) text-amber-900">
+    <div className="relative z-50 border-l-4 border-amber-600 bg-(--c-saffron-lt) text-amber-900 md:sticky md:top-0">
       <AnimatePresence mode="wait">
         {isMinimized ? (
           <motion.button
@@ -17,7 +17,7 @@ export function DisclaimerBanner() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             onClick={() => setIsMinimized(false)}
-            className="w-full flex items-center justify-center gap-2 py-0.5 px-4 hover:bg-amber-100 transition-colors"
+            className="flex w-full items-center justify-center gap-2 px-4 py-1 hover:bg-amber-100 transition-colors"
           >
             <AlertTriangle className="h-3.5 w-3.5" />
             <span className="text-xs font-medium">HealthNav disclaimer hidden. Click to expand.</span>
@@ -29,15 +29,15 @@ export function DisclaimerBanner() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex items-center justify-between gap-4 py-2.5 px-4"
+            className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between"
           >
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-start gap-3 md:flex-1 md:items-center">
               <AlertTriangle className="h-5 w-5 shrink-0" />
-              <p className="text-sm">
+              <p className="text-sm leading-5">
                 HealthNav provides decision support only, not medical advice. Always consult a qualified doctor before making health decisions.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end md:self-auto">
               <button className="text-xs font-medium underline underline-offset-2">Learn more</button>
               <button
                 onClick={() => setIsMinimized(true)}

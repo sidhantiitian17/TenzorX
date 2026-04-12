@@ -1,7 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, type ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
 import type { AppState, AppAction, PatientProfile } from '@/types';
+
+const APPOINTMENT_REQUESTS_KEY = 'healthnav-appointment-requests';
 
 const initialState: AppState = {
   conversation: [],
@@ -19,6 +21,17 @@ const initialState: AppState = {
   resultsPanelOpen: false,
   lenderMode: false,
   lenderRiskProfile: null,
+  sortMode: 'best-match',
+  filters: {
+    tier: 'all',
+    nabhOnly: false,
+    distanceKm: null,
+    rating: null,
+  },
+  emergencyMode: false,
+  activeHospitalId: null,
+  geoAdjustment: 'auto',
+  appointmentRequests: [],
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -115,6 +128,71 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         lenderRiskProfile: action.payload,
       };
+    case 'SET_SORT_MODE':
+      return {
+        ...state,
+        sortMode: action.payload,
+      };
+    case 'SET_FILTERS':
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          ...action.payload,
+        },
+      };
+    case 'SET_EMERGENCY_MODE':
+      return {
+        ...state,
+        emergencyMode: action.payload,
+      };
+    case 'SET_ACTIVE_HOSPITAL':
+      return {
+        ...state,
+        activeHospitalId: action.payload,
+      };
+    case 'SET_GEO_ADJUSTMENT':
+      return {
+        ...state,
+        geoAdjustment: action.payload,
+      };
+    case 'UPSERT_APPOINTMENT_REQUEST': {
+      const next = action.payload;
+      const exists = state.appointmentRequests.some((request) => request.id === next.id);
+      return {
+        ...state,
+        appointmentRequests: exists
+          ? state.appointmentRequests.map((request) =>
+              request.id === next.id ? next : request
+            )
+          : [next, ...state.appointmentRequests],
+      };
+    }
+    case 'SET_APPOINTMENT_REQUEST_STATUS':
+      return {
+        ...state,
+        appointmentRequests: state.appointmentRequests.map((request) =>
+          request.id === action.payload.id
+            ? {
+                ...request,
+                status: action.payload.status,
+                updatedAt: new Date().toISOString(),
+              }
+            : request
+        ),
+      };
+    case 'REMOVE_APPOINTMENT_REQUEST':
+      return {
+        ...state,
+        appointmentRequests: state.appointmentRequests.filter(
+          (request) => request.id !== action.payload
+        ),
+      };
+    case 'HYDRATE_APPOINTMENT_REQUESTS':
+      return {
+        ...state,
+        appointmentRequests: action.payload,
+      };
     case 'CLEAR_CONVERSATION':
       return {
         ...state,
@@ -125,6 +203,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         lenderRiskProfile: null,
         selectedForCompare: [],
         resultsPanelOpen: false,
+        activeHospitalId: null,
       };
     case 'CLEAR_COMPARE':
       return {
@@ -142,6 +221,29 @@ const AppDispatchContext = createContext<React.Dispatch<AppAction> | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(APPOINTMENT_REQUESTS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      dispatch({ type: 'HYDRATE_APPOINTMENT_REQUESTS', payload: parsed });
+    } catch {
+      // Ignore invalid persisted values.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        APPOINTMENT_REQUESTS_KEY,
+        JSON.stringify(state.appointmentRequests)
+      );
+    } catch {
+      // Ignore storage write issues.
+    }
+  }, [state.appointmentRequests]);
 
   return (
     <AppStateContext.Provider value={state}>

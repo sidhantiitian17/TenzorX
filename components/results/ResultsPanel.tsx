@@ -6,6 +6,8 @@ import { X, Info, Map, List } from 'lucide-react';
 import type { ClinicalMapping, CostEstimate, Hospital, RiskAdjustment } from '@/types';
 import { HospitalList } from './HospitalList';
 import { HospitalMap } from './HospitalMap';
+import { PathwayVisualizer } from './PathwayVisualizer';
+import { ResultsControls } from './ResultsControls';
 import { CostEstimateCard } from '@/components/cost/CostEstimateCard';
 import { ClinicalMappingCard } from './ClinicalMappingCard';
 import { ProfileImpactCallout } from '@/components/profile/ProfileImpactCallout';
@@ -16,6 +18,7 @@ import { FinancialGuide } from '@/components/assist/FinancialGuide';
 import { RankingModal } from './RankingModal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAppState } from '@/lib/context';
 
 interface ResultsPanelProps {
   hospitals: Hospital[];
@@ -44,6 +47,7 @@ export function ResultsPanel({
   dataSources = [],
   onCorrectMapping,
 }: ResultsPanelProps) {
+  const appState = useAppState();
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | undefined>();
   const [rankingOpen, setRankingOpen] = useState(false);
@@ -58,7 +62,7 @@ export function ResultsPanel({
           exit={{ opacity: 0, x: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           className={cn(
-            'bg-background border-l border-border overflow-hidden flex flex-col',
+            'bg-background border-l border-border overflow-hidden flex flex-col lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)]',
             className
           )}
         >
@@ -111,6 +115,8 @@ export function ResultsPanel({
             </div>
           </div>
 
+          <ResultsControls totalCount={appState.searchResults.length} visibleCount={hospitals.length} />
+
           {/* Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {viewMode === 'map' && hospitals.length > 0 ? (
@@ -131,6 +137,10 @@ export function ResultsPanel({
                     mapping={clinicalMapping}
                     onCorrect={onCorrectMapping ?? (() => undefined)}
                   />
+                )}
+
+                {clinicalMapping?.pathway && clinicalMapping.pathway.length > 0 && (
+                  <PathwayVisualizer pathway={clinicalMapping.pathway} />
                 )}
 
                 {riskAdjustments.length > 0 && <ProfileImpactCallout adjustments={riskAdjustments} />}

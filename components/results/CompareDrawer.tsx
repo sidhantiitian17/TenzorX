@@ -42,25 +42,41 @@ export function CompareDrawer({
     return valueScore > bestValueScore ? hospital.id : best;
   }, hospitals[0].id);
 
-  const comparisonRows = [
+  const comparisonRows: Array<{
+    label: string;
+    highlight?: boolean;
+    render: (h: Hospital) => React.ReactNode;
+    exportValue?: (h: Hospital) => string;
+  }> = [
     {
       label: 'Rating',
+      highlight: true,
       render: (h: Hospital) => (
         <div className="flex items-center gap-1">
           <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
           <span className="font-medium">{h.rating}</span>
         </div>
       ),
+      exportValue: (h: Hospital) => String(h.rating),
     },
     {
-      label: 'Estimated Cost',
+      label: 'Total Cost',
+      highlight: true,
       render: (h: Hospital) => (
         <span className="font-mono font-medium">{formatCostRange(h.cost_range)}</span>
       ),
+      exportValue: (h: Hospital) => formatCostRange(h.cost_range),
     },
     {
       label: 'Distance',
       render: (h: Hospital) => formatDistance(h.distance_km),
+      exportValue: (h: Hospital) => formatDistance(h.distance_km),
+    },
+    {
+      label: 'Confidence',
+      highlight: true,
+      render: (h: Hospital) => `${Math.round((h.confidence ?? 0.6) * 100)}%`,
+      exportValue: (h: Hospital) => `${Math.round((h.confidence ?? 0.6) * 100)}%`,
     },
     {
       label: 'NABH Accredited',
@@ -70,32 +86,112 @@ export function CompareDrawer({
         ) : (
           <X className="h-5 w-5 text-muted-foreground" />
         ),
+      exportValue: (h: Hospital) => (h.nabh_accredited ? 'Yes' : 'No'),
     },
     {
       label: 'Hospital Tier',
       render: (h: Hospital) => getTierLabel(h.tier),
+      exportValue: (h: Hospital) => getTierLabel(h.tier),
+    },
+    {
+      label: 'Procedure Volume',
+      render: (h: Hospital) => (h.procedure_volume ? h.procedure_volume : 'Unknown'),
+      exportValue: (h: Hospital) => (h.procedure_volume ? h.procedure_volume : 'Unknown'),
+    },
+    {
+      label: 'ICU Available',
+      highlight: true,
+      render: (h: Hospital) => (
+        <span className={h.icu_available ? 'text-emerald-600' : 'text-red-600 font-medium'}>
+          {h.icu_available ? 'Yes' : 'No'}
+        </span>
+      ),
+      exportValue: (h: Hospital) => (h.icu_available ? 'Yes' : 'No'),
     },
     {
       label: 'Specializations',
       render: (h: Hospital) => h.specializations.slice(0, 2).join(', '),
+      exportValue: (h: Hospital) => h.specializations.slice(0, 2).join(', '),
+    },
+    {
+      label: 'Best For',
+      render: (h: Hospital) => h.strengths[0] ?? 'Balanced care',
+      exportValue: (h: Hospital) => h.strengths[0] ?? 'Balanced care',
     },
   ];
 
-  const exportComparison = () => {
+  const exportCsv = () => {
     const headers = ['Attribute', ...hospitals.map((h) => h.name)];
-    const rows = [
-      ['Rating', ...hospitals.map((h) => String(h.rating))],
-      ['Cost', ...hospitals.map((h) => formatCostRange(h.cost_range))],
-      ['Distance', ...hospitals.map((h) => formatDistance(h.distance_km))],
-      ['NABH', ...hospitals.map((h) => (h.nabh_accredited ? 'Yes' : 'No'))],
-      ['Tier', ...hospitals.map((h) => getTierLabel(h.tier))],
-    ];
+    const rows = comparisonRows.map((row) => [
+      row.label,
+      ...hospitals.map((hospital) => (row.exportValue ? row.exportValue(hospital) : String(row.render(hospital)))),
+    ]);
     const content = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = 'healthnav-comparison.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportJson = () => {
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      bestValueHospitalId: bestValueId,
+      hospitals: hospitals.map((h) => ({
+        id: h.id,
+        name: h.name,
+        city: h.city,
+        rating: h.rating,
+        costRange: h.cost_range,
+        distanceKm: h.distance_km,
+        confidence: Math.round((h.confidence ?? 0.6) * 100),
+        nabhAccredited: h.nabh_accredited,
+        tier: h.tier,
+        procedureVolume: h.procedure_volume,
+        icuAvailable: h.icu_available,
+        bestFor: h.strengths[0] ?? 'Balanced care',
+      })),
+      disclaimer: 'HealthNav provides decision support only. Confirm with hospitals directly before making decisions.',
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'healthnav-comparison.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportSummary = () => {
+    const lines = [
+      'HealthNav Hospital Comparison',
+      `Best Value Hospital ID: ${bestValueId}`,
+      '',
+      ...hospitals.map((h) => {
+        const confidence = Math.round((h.confidence ?? 0.6) * 100);
+        return [
+          `${h.name} (${h.city})`,
+          `- Rating: ${h.rating}`,
+          `- Cost: ${formatCostRange(h.cost_range)}`,
+          `- Distance: ${formatDistance(h.distance_km)}`,
+          `- Confidence: ${confidence}%`,
+          `- NABH: ${h.nabh_accredited ? 'Yes' : 'No'}`,
+          `- ICU Available: ${h.icu_available ? 'Yes' : 'No'}`,
+          `- Best For: ${h.strengths[0] ?? 'Balanced care'}`,
+          '',
+        ].join('\n');
+      }),
+      'Decision support only. Get direct quotes before final decision.',
+    ];
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'healthnav-comparison-summary.txt';
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -123,7 +219,7 @@ export function CompareDrawer({
             <table className="w-full min-w-150">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left font-medium text-muted-foreground px-4 py-3 w-36">
+                  <th className="sticky left-0 z-20 w-36 bg-card px-4 py-3 text-left font-medium text-muted-foreground">
                     Attribute
                   </th>
                   {hospitals.map((hospital) => (
@@ -159,14 +255,20 @@ export function CompareDrawer({
               </thead>
               <tbody>
                 {comparisonRows.map((row, index) => (
+                  // Keep the first column sticky so mobile horizontal scrolling keeps context visible.
                   <tr
                     key={row.label}
                     className={cn(
                       'border-b border-border',
-                      index % 2 === 0 && 'bg-muted/20'
+                      index % 2 === 0 && 'bg-muted/20',
+                      row.highlight && 'bg-amber-50/50'
                     )}
                   >
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                    <td className={cn(
+                      'sticky left-0 z-10 px-4 py-3 text-sm text-muted-foreground',
+                      index % 2 === 0 ? 'bg-muted/20' : 'bg-card',
+                      row.highlight && 'bg-amber-50/80'
+                    )}>
                       {row.label}
                     </td>
                     {hospitals.map((hospital) => (
@@ -180,9 +282,15 @@ export function CompareDrawer({
             </table>
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
-            <Button size="sm" variant="outline" onClick={exportComparison}>
-              Export Comparison
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3">
+            <Button size="sm" variant="outline" onClick={exportCsv}>
+              Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={exportJson}>
+              Export JSON
+            </Button>
+            <Button size="sm" variant="outline" onClick={exportSummary}>
+              Export Summary
             </Button>
             <Button size="sm" variant="outline" onClick={onClearAll}>
               Start Over

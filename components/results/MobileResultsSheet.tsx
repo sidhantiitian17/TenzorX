@@ -2,14 +2,20 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown } from 'lucide-react';
-import type { Hospital, CostEstimate } from '@/types';
+import type { Hospital, CostEstimate, ClinicalMapping } from '@/types';
 import { HospitalList } from './HospitalList';
+import { PathwayVisualizer } from './PathwayVisualizer';
+import { ResultsControls } from './ResultsControls';
 import { CostEstimateCard } from '@/components/cost/CostEstimateCard';
 import { Button } from '@/components/ui/button';
+import { ClinicalMappingCard } from './ClinicalMappingCard';
+import { useAppState } from '@/lib/context';
 
 interface MobileResultsSheetProps {
   hospitals: Hospital[];
   costEstimate: CostEstimate | null;
+  clinicalMapping?: ClinicalMapping | null;
+  onCorrectMapping?: () => void;
   selectedIds: string[];
   onToggleCompare: (id: string) => void;
   isOpen: boolean;
@@ -19,11 +25,15 @@ interface MobileResultsSheetProps {
 export function MobileResultsSheet({
   hospitals,
   costEstimate,
+  clinicalMapping,
+  onCorrectMapping,
   selectedIds,
   onToggleCompare,
   isOpen,
   onClose,
 }: MobileResultsSheetProps) {
+  const appState = useAppState();
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -59,8 +69,19 @@ export function MobileResultsSheet({
               </Button>
             </div>
 
+            <ResultsControls totalCount={appState.searchResults.length} visibleCount={hospitals.length} />
+
             {/* Content */}
             <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-4 space-y-6 custom-scrollbar">
+              {clinicalMapping && (
+                <ClinicalMappingCard
+                  mapping={clinicalMapping}
+                  onCorrect={onCorrectMapping ?? (() => undefined)}
+                />
+              )}
+              {clinicalMapping?.pathway && clinicalMapping.pathway.length > 0 && (
+                <PathwayVisualizer pathway={clinicalMapping.pathway} />
+              )}
               {costEstimate && (
                 <CostEstimateCard
                   estimate={costEstimate}

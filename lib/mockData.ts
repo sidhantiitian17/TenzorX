@@ -3,6 +3,8 @@ import type {
   CostBreakdown,
   CostEstimate,
   CostRange,
+  ConfidenceFactor,
+  TierComparison,
   Hospital,
   LenderRiskProfile,
   PathwayStep,
@@ -39,6 +41,52 @@ const pathwayByProcedure: Record<string, PathwayStep[]> = {
     { step: 4, name: 'Observation stay', duration: '2-3 days', cost_range: { min: 15000, max: 35000 } },
     { step: 5, name: 'Follow-up medication', duration: '4-8 weeks', cost_range: { min: 3000, max: 12000 } },
   ],
+  'CABG / Bypass': [
+    { step: 1, name: 'Cardiology consultation', duration: '1 day', cost_range: { min: 1500, max: 4000 } },
+    { step: 2, name: 'Pre-op testing', duration: '2-3 days', cost_range: { min: 10000, max: 20000 } },
+    { step: 3, name: 'Bypass surgery', duration: '4-6 hrs', cost_range: { min: 140000, max: 260000 } },
+    { step: 4, name: 'ICU / ward recovery', duration: '5-8 days', cost_range: { min: 40000, max: 90000 } },
+    { step: 5, name: 'Follow-up & rehab', duration: '4-8 weeks', cost_range: { min: 10000, max: 25000 } },
+  ],
+  'Cataract Surgery': [
+    { step: 1, name: 'Eye evaluation', duration: '1 day', cost_range: { min: 800, max: 2000 } },
+    { step: 2, name: 'Lens selection', duration: '1 day', cost_range: { min: 5000, max: 18000 } },
+    { step: 3, name: 'Procedure', duration: '30-60 min', cost_range: { min: 20000, max: 45000 } },
+    { step: 4, name: 'Recovery & drops', duration: '1-2 weeks', cost_range: { min: 2000, max: 6000 } },
+  ],
+};
+
+const confidenceFactors: ConfidenceFactor[] = [
+  { key: 'data_availability', label: 'Data availability', score: 82, weight: 0.35, note: 'Broad hospital pricing coverage exists for this procedure.' },
+  { key: 'pricing_consistency', label: 'Pricing consistency', score: 76, weight: 0.25, note: 'Hospital quotes show moderate spread around the benchmark.' },
+  { key: 'recency', label: 'Benchmark recency', score: 71, weight: 0.2, note: 'Most benchmark inputs are recent enough for a stable estimate.' },
+  { key: 'patient_complexity', label: 'Patient complexity', score: 68, weight: 0.2, note: 'Age and comorbidity modifiers can widen the range.' },
+];
+
+const tierComparisonForKnee: TierComparison = {
+  budget: { min: 80000, max: 120000 },
+  mid: { min: 120000, max: 220000 },
+  premium: { min: 250000, max: 450000 },
+};
+
+export const medicalTerms = [
+  { term: 'Angioplasty', simple_explanation: 'A procedure to open narrowed heart blood vessels.', analogy: 'Like unclogging a pipe.', related_terms: ['stent', 'cardiology'] },
+  { term: 'ICU', simple_explanation: 'A special unit for close monitoring after serious procedures.', analogy: 'A high-attention recovery zone.', related_terms: ['HDU', 'critical care'] },
+  { term: 'Comorbidity', simple_explanation: 'Another health condition you already have.', analogy: 'An extra factor that can change the path.', related_terms: ['diabetes', 'hypertension'] },
+  { term: 'Physiotherapy', simple_explanation: 'Guided exercises that help you recover movement and strength.', analogy: 'A structured rehab routine.', related_terms: ['rehab', 'recovery'] },
+];
+
+export const appointmentChecklists = {
+  'Total Knee Arthroplasty (TKA)': {
+    documents: ['Aadhar card / photo ID', 'Previous X-rays / MRI', 'Medication list', 'Insurance card', 'Doctor referral letter'],
+    questions: ['What implant options are available?', 'How long will physiotherapy take?', 'What is included in the package price?'],
+    forms: ['Patient Registration Form', 'Medical History Declaration', 'Consent for Surgery Form'],
+  },
+  Angioplasty: {
+    documents: ['Aadhar card / photo ID', 'ECG / angiogram reports', 'Medication list', 'Insurance card', 'Referral letter'],
+    questions: ['Is a stent included?', 'Will ICU observation be needed?', 'What is the expected recovery time?'],
+    forms: ['Patient Registration Form', 'Consent for Procedure Form'],
+  },
 };
 
 const procedureCatalog = {
@@ -135,6 +183,26 @@ function buildTotal(breakdown: CostBreakdown): {
     typical_min: Math.round(min * 1.08),
     typical_max: Math.round(max * 0.88),
   };
+}
+
+function defaultQualification(specialization: string): string {
+  if (specialization.toLowerCase().includes('cardio')) return 'DM Cardiology';
+  if (specialization.toLowerCase().includes('ortho')) return 'MS Orthopedics';
+  if (specialization.toLowerCase().includes('surgery')) return 'MCh Surgery';
+  return 'MBBS, MD';
+}
+
+function buildAvailableSlots(waitDays: number): string[] {
+  const now = new Date();
+  const windows = ['10:00 AM', '12:30 PM', '4:00 PM'];
+
+  return windows.map((window, index) => {
+    const slotDate = new Date(now);
+    slotDate.setDate(now.getDate() + Math.max(0, waitDays - 1) + index);
+    const day = slotDate.toLocaleDateString('en-IN', { weekday: 'short' });
+    const month = slotDate.toLocaleDateString('en-IN', { month: 'short' });
+    return `${day}, ${slotDate.getDate()} ${month} - ${window}`;
+  });
 }
 
 export const mockHospitals: Hospital[] = [
@@ -389,6 +457,14 @@ export function generateMockSearchData(query: string, location: string): SearchD
     .slice(0, 3);
   const hospitals = (hospitalPool.length > 0 ? hospitalPool : mockHospitals.slice(0, 3)).map((h) => ({
     ...h,
+    doctors: h.doctors.map((doctor, index) => ({
+      ...doctor,
+      qualification: doctor.qualification ?? defaultQualification(doctor.specialization),
+      wait_time_days: doctor.wait_time_days ?? Math.max(1, (h.wait_time_days ?? 3) + index),
+      booking_url: doctor.booking_url ?? `https://appointments.healthnav.in/${h.id}/${doctor.id}`,
+      available_slots:
+        doctor.available_slots ?? buildAvailableSlots(doctor.wait_time_days ?? Math.max(1, (h.wait_time_days ?? 3) + index)),
+    })),
     rank_signals: h.rank_signals ?? {
       clinical_capability: 78,
       reputation: 74,
@@ -435,6 +511,7 @@ export function generateMockSearchData(query: string, location: string): SearchD
     category: procedure.category,
     pathway: pathwayByProcedure[procedure.procedure] ?? pathwayByProcedure.Angioplasty,
     confidence: mappingConfidence,
+    confidence_factors: confidenceFactors,
   };
 
   return {
@@ -451,11 +528,13 @@ export function generateMockSearchData(query: string, location: string): SearchD
     hospitals,
     clinical_mapping: clinicalMapping,
     pathway: clinicalMapping.pathway,
+    confidence_factors: confidenceFactors,
     geo_adjustment: {
       city_tier: 'tier2',
       city_name: location,
       discount_vs_metro: 0.32,
     },
+    tier_comparison: tierComparisonForKnee,
     risk_adjustments: [
       {
         factor: 'diabetes',
@@ -490,11 +569,13 @@ export function buildCostEstimate(searchData: SearchData): CostEstimate {
       max: Math.round(totalMax * 0.88),
     },
     confidence: searchData.confidence,
+    confidence_factors: searchData.confidence_factors,
     cost_breakdown: searchData.cost_breakdown,
     comorbidity_warnings: searchData.comorbidity_warnings,
     geo_adjustment: searchData.geo_adjustment,
     risk_adjustments: searchData.risk_adjustments,
     data_sources: searchData.data_sources,
+    tier_comparison: searchData.tier_comparison,
   };
 }
 
@@ -526,6 +607,12 @@ export function buildLenderRiskProfile(estimate: CostEstimate): LenderRiskProfil
       icu_probability: '12-18% (elevated by profile)',
       avg_los_days: '4-6 days',
       readmission_rate: '~6% national benchmark',
+    },
+    procedure_risk_detail: {
+      mortality_risk: 0.5,
+      icu_probability: 15,
+      avg_los_days: 5,
+      readmission_rate: 6,
     },
   };
 }

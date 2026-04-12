@@ -41,6 +41,10 @@ export function ClinicalMappingCard({ mapping, onCorrect }: ClinicalMappingCardP
         <p className="text-muted-foreground">
           Your query: <span className="text-foreground">{mapping.user_query}</span>
         </p>
+        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mapping confidence</span>
+          <span className="font-mono text-sm font-semibold">{Math.round(mapping.confidence * 100)}%</span>
+        </div>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <Field label="Procedure" value={mapping.procedure} />
           <Field label="Category" value={mapping.category} />
@@ -63,6 +67,27 @@ export function ClinicalMappingCard({ mapping, onCorrect }: ClinicalMappingCardP
             ))}
           </div>
         </div>
+
+        {mapping.confidence_factors && mapping.confidence_factors.length > 0 && (
+          <div className="rounded-lg border border-border p-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Confidence drivers
+            </p>
+            <div className="space-y-2">
+              {mapping.confidence_factors.map((factor) => (
+                <div key={factor.key} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">{factor.label}</span>
+                    <span className="font-mono text-muted-foreground">{factor.score}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div className="h-2 rounded-full bg-primary" style={{ width: `${factor.score}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           Symptom-to-condition mapping is approximate. The same symptoms may indicate different conditions. This tool helps you research and prepare; your doctor makes the diagnosis.

@@ -15,9 +15,12 @@ import {
   Sun,
   MessageSquare,
   Landmark,
+  Calendar,
+  PanelLeft,
 } from 'lucide-react';
 import { useAppState, useAppDispatch } from '@/lib/context';
 import { Button } from '@/components/ui/button';
+import type { AppointmentRequest, AppointmentStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatTimestamp } from '@/lib/formatters';
 
@@ -50,6 +53,7 @@ export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSe
   const menuItems = [
     { icon: History, label: 'History', badge: state.conversation.length > 0 ? state.conversation.length : undefined },
     { icon: Bookmark, label: 'Saved Results', badge: undefined },
+    { icon: Calendar, label: 'My Appointment Requests', badge: state.appointmentRequests.length > 0 ? state.appointmentRequests.length : undefined },
     { icon: User, label: 'Patient Profile', badge: state.patientProfile ? 1 : undefined },
     { icon: Landmark, label: state.lenderMode ? 'Lender Mode: ON' : 'Lender / Insurer Mode', badge: undefined },
     { icon: Settings, label: 'Settings', badge: undefined },
@@ -89,51 +93,92 @@ export function Sidebar({ className, onToggleLenderMode, onOpenProfile, onOpenSe
             darkMode={darkMode}
             toggleDarkMode={toggleDarkMode}
             conversation={state.conversation}
+            appointmentRequests={state.appointmentRequests}
             onToggleLenderMode={onToggleLenderMode}
             onOpenProfile={onOpenProfile}
             onOpenSettings={onOpenSettings}
             onLoadQuery={onLoadQuery}
+            onUpdateAppointmentStatus={(id, status) => dispatch({ type: 'SET_APPOINTMENT_REQUEST_STATUS', payload: { id, status } })}
+            onRemoveAppointmentRequest={(id) => dispatch({ type: 'REMOVE_APPOINTMENT_REQUEST', payload: id })}
           />
         </motion.aside>
       </>
     );
   }
 
-  // Desktop sidebar
+  // Desktop sidebar rail for lg-xl and full sidebar for xl+
   return (
-    <aside
-      className={cn(
-        'hidden lg:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64',
-        className
-      )}
-    >
-      <div className="flex items-center justify-end p-2 border-b border-sidebar-border">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-      <SidebarContent
-        menuItems={menuItems}
-        collapsed={collapsed}
-        darkMode={darkMode}
-        toggleDarkMode={toggleDarkMode}
-        conversation={state.conversation}
-        onToggleLenderMode={onToggleLenderMode}
-        onOpenProfile={onOpenProfile}
-        onOpenSettings={onOpenSettings}
-        onLoadQuery={onLoadQuery}
-      />
-    </aside>
+    <>
+      <aside
+        className={cn(
+          'hidden lg:flex xl:hidden flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 w-16',
+          className
+        )}
+      >
+        <div className="flex items-center justify-center border-b border-sidebar-border p-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
+            aria-label="Open navigation drawer"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </Button>
+        </div>
+        <SidebarContent
+          menuItems={menuItems}
+          collapsed
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          conversation={state.conversation}
+          appointmentRequests={state.appointmentRequests}
+          onToggleLenderMode={onToggleLenderMode}
+          onOpenProfile={onOpenProfile}
+          onOpenSettings={onOpenSettings}
+          onLoadQuery={onLoadQuery}
+          onUpdateAppointmentStatus={(id, status) => dispatch({ type: 'SET_APPOINTMENT_REQUEST_STATUS', payload: { id, status } })}
+          onRemoveAppointmentRequest={(id) => dispatch({ type: 'REMOVE_APPOINTMENT_REQUEST', payload: id })}
+        />
+      </aside>
+
+      <aside
+        className={cn(
+          'hidden xl:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300',
+          collapsed ? 'w-16' : 'w-64',
+          className
+        )}
+      >
+        <div className="flex items-center justify-end border-b border-sidebar-border p-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="h-8 w-8"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        <SidebarContent
+          menuItems={menuItems}
+          collapsed={collapsed}
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          conversation={state.conversation}
+          appointmentRequests={state.appointmentRequests}
+          onToggleLenderMode={onToggleLenderMode}
+          onOpenProfile={onOpenProfile}
+          onOpenSettings={onOpenSettings}
+          onLoadQuery={onLoadQuery}
+          onUpdateAppointmentStatus={(id, status) => dispatch({ type: 'SET_APPOINTMENT_REQUEST_STATUS', payload: { id, status } })}
+          onRemoveAppointmentRequest={(id) => dispatch({ type: 'REMOVE_APPOINTMENT_REQUEST', payload: id })}
+        />
+      </aside>
+    </>
   );
 }
 
@@ -143,10 +188,13 @@ interface SidebarContentProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
   conversation: { id: string; content: string; timestamp: Date; role: string }[];
+  appointmentRequests: AppointmentRequest[];
   onToggleLenderMode?: () => void;
   onOpenProfile?: () => void;
   onOpenSettings?: () => void;
   onLoadQuery?: (query: string) => void;
+  onUpdateAppointmentStatus?: (id: string, status: AppointmentStatus) => void;
+  onRemoveAppointmentRequest?: (id: string) => void;
 }
 
 function SidebarContent({
@@ -155,10 +203,13 @@ function SidebarContent({
   darkMode,
   toggleDarkMode,
   conversation,
+  appointmentRequests,
   onToggleLenderMode,
   onOpenProfile,
   onOpenSettings,
   onLoadQuery,
+  onUpdateAppointmentStatus,
+  onRemoveAppointmentRequest,
 }: SidebarContentProps) {
   const handleMenuClick = (label: string) => {
     if (label.includes('Lender')) {
@@ -183,7 +234,7 @@ function SidebarContent({
             key={item.label}
             onClick={() => handleMenuClick(item.label)}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+              'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-11',
               collapsed && 'justify-center'
             )}
             aria-label={item.label}
@@ -236,12 +287,74 @@ function SidebarContent({
         </div>
       )}
 
+      {!collapsed && (
+        <div className="mt-6 px-3">
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            My Appointment Requests
+          </h3>
+          {appointmentRequests.length === 0 ? (
+            <p className="rounded-md border border-dashed border-sidebar-border px-2 py-2 text-xs text-muted-foreground">
+              No appointment requests yet.
+            </p>
+          ) : (
+            <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+              {[...appointmentRequests]
+                .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                .slice(0, 6)
+                .map((request) => (
+                  <div key={request.id} className="rounded-md border border-sidebar-border bg-sidebar-accent/40 px-2 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-xs font-medium text-sidebar-foreground">{request.doctorName}</p>
+                      <span className={cn(
+                        'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                        request.status === 'confirmed'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : request.status === 'cancelled'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'
+                      )}>
+                        {request.status}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{request.hospitalName}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">{request.slot}</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {request.status !== 'confirmed' && request.status !== 'cancelled' && (
+                        <button
+                          onClick={() => onUpdateAppointmentStatus?.(request.id, 'confirmed')}
+                          className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700"
+                        >
+                          Mark Confirmed
+                        </button>
+                      )}
+                      {request.status !== 'cancelled' && (
+                        <button
+                          onClick={() => onUpdateAppointmentStatus?.(request.id, 'cancelled')}
+                          className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onRemoveAppointmentRequest?.(request.id)}
+                        className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Dark mode toggle */}
       <div className="mt-auto px-2 pt-4 border-t border-sidebar-border">
         <button
           onClick={toggleDarkMode}
           className={cn(
-            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors min-h-11',
             collapsed && 'justify-center'
           )}
         >

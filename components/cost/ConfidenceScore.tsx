@@ -1,9 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Info } from 'lucide-react';
 import { getConfidenceLabel } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -24,6 +32,7 @@ export function ConfidenceScore({
   showLabel = true,
   onClick,
 }: ConfidenceScoreProps) {
+  const [open, setOpen] = useState(false);
   const percentage = Math.round(confidence * 100);
   const label = getConfidenceLabel(confidence);
 
@@ -47,61 +56,102 @@ export function ConfidenceScore({
 
   return (
     <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button className="flex flex-col items-center gap-1" onClick={onClick} aria-label={`Confidence ${percentage}% ${label}`}>
-            <div className={cn('relative rounded-md px-1.5', s.container, colors.bg)}>
-              {/* Background circle */}
-              <svg className="w-full h-full" viewBox="0 0 100 52">
-                <title>{`Confidence ${percentage}% ${label}`}</title>
-                <circle
-                  cx="50"
-                  cy="50"
-                  r={s.radius}
-                  fill="none"
-                  className="stroke-muted"
-                  strokeWidth={s.strokeWidth}
-                  strokeDasharray={circumference}
-                  strokeDashoffset={0}
-                  transform="rotate(180 50 50)"
-                />
-                {/* Progress arc */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={s.radius}
-                  fill="none"
-                  className={colors.stroke}
-                  strokeWidth={s.strokeWidth}
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  initial={{ strokeDashoffset: circumference }}
-                  animate={{ strokeDashoffset: offset }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  transform="rotate(180 50 50)"
-                />
-              </svg>
-              {/* Percentage text */}
-              <div className="absolute inset-0 flex items-end justify-center pb-0.5">
-                <span className={cn('font-bold tabular-nums font-mono', s.fontSize, colors.text)}>
-                  {percentage}%
-                </span>
+      <>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              className="flex flex-col items-center gap-1"
+              onClick={() => {
+                onClick?.();
+                setOpen(true);
+              }}
+              aria-label={`Confidence ${percentage}% ${label}`}
+            >
+              <div className={cn('relative rounded-md px-1.5', s.container, colors.bg)}>
+                {/* Background circle */}
+                <svg className="h-full w-full" viewBox="0 0 100 52">
+                  <title>{`Confidence ${percentage}% ${label}`}</title>
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={s.radius}
+                    fill="none"
+                    className="stroke-muted"
+                    strokeWidth={s.strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={0}
+                    transform="rotate(180 50 50)"
+                  />
+                  {/* Progress arc */}
+                  <motion.circle
+                    cx="50"
+                    cy="50"
+                    r={s.radius}
+                    fill="none"
+                    className={colors.stroke}
+                    strokeWidth={s.strokeWidth}
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    initial={{ strokeDashoffset: circumference }}
+                    animate={{ strokeDashoffset: offset }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    transform="rotate(180 50 50)"
+                  />
+                </svg>
+                {/* Percentage text */}
+                <div className="absolute inset-0 flex items-end justify-center pb-0.5">
+                  <span className={cn('font-mono font-bold tabular-nums', s.fontSize, colors.text)}>
+                    {percentage}%
+                  </span>
+                </div>
               </div>
+              {showLabel && (
+                <div className="flex items-center gap-1">
+                  <span className={cn('text-xs font-medium', colors.text)}>{label}</span>
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                </div>
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <p className="text-sm">
+              Confidence score reflects data availability, procedure complexity, and regional pricing variability.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Confidence Score: {percentage}%</DialogTitle>
+            </DialogHeader>
+
+            <p className="text-sm text-muted-foreground">
+              {label} confidence means the estimate is grounded in available benchmark data, but the final cost can still vary by hospital, room choice, and patient complexity.
+            </p>
+
+            <div className="space-y-3 text-sm">
+              <FactorRow label="Data availability" value="High where city benchmarks are dense" />
+              <FactorRow label="Pricing consistency" value="Moderate spread across providers" />
+              <FactorRow label="Benchmark recency" value="Recent enough for practical decision support" />
+              <FactorRow label="Patient complexity" value="Age and comorbidities can widen the range" />
             </div>
-            {showLabel && (
-              <div className="flex items-center gap-1">
-                <span className={cn('text-xs font-medium', colors.text)}>{label}</span>
-                <Info className="h-3 w-3 text-muted-foreground" />
-              </div>
-            )}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-xs">
-          <p className="text-sm">
-            Confidence score reflects data availability, procedure complexity, and regional pricing variability.
-          </p>
-        </TooltipContent>
-      </Tooltip>
+
+            <Button className="w-full" onClick={() => setOpen(false)}>
+              Close
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </>
     </TooltipProvider>
+  );
+}
+
+function FactorRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border px-3 py-2">
+      <p className="font-medium">{label}</p>
+      <p className="text-muted-foreground">{value}</p>
+    </div>
   );
 }

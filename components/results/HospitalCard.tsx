@@ -16,6 +16,7 @@ import type { Hospital } from '@/types';
 import { formatCostRange, formatDistance, getTierLabel, getTierColor } from '@/lib/formatters';
 import { ConfidenceScore } from '@/components/cost/ConfidenceScore';
 import { CostBreakdown } from '@/components/cost/CostBreakdown';
+import { DoctorCard } from './DoctorCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +67,35 @@ export function HospitalCard({
       max: Math.round(hospital.cost_range.max * 0.1),
     },
   };
+
+  const rankingSignals = [
+    {
+      key: 'clinical_capability' as const,
+      label: 'Clinical Capability',
+      weight: 35,
+      color: 'bg-[var(--c-teal-500)]',
+    },
+    {
+      key: 'reputation' as const,
+      label: 'Reputation',
+      weight: 30,
+      color: 'bg-[var(--c-info)]',
+    },
+    {
+      key: 'accessibility' as const,
+      label: 'Accessibility',
+      weight: 20,
+      color: 'bg-[var(--c-warning)]',
+    },
+    {
+      key: 'affordability' as const,
+      label: 'Affordability',
+      weight: 15,
+      color: 'bg-[var(--c-success)]',
+    },
+  ];
+
+  const sentimentThemes = hospital.sentiment_data?.themes.slice(0, 5) ?? [];
 
   return (
     <motion.div
@@ -215,6 +245,36 @@ export function HospitalCard({
                 className="overflow-hidden"
               >
                 <div className="pt-4 mt-4 border-t border-border space-y-4">
+                  {/* Ranking signal breakdown */}
+                  {hospital.rank_signals && (
+                    <div>
+                      <h4 className="mb-3 text-sm font-medium">Ranking Signal Breakdown</h4>
+                      <div className="space-y-2">
+                        {rankingSignals.map((signal, index) => {
+                          const score = hospital.rank_signals?.[signal.key] ?? 0;
+                          return (
+                            <div key={signal.key} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium text-foreground">
+                                  {signal.label} ({signal.weight}%)
+                                </span>
+                                <span className="font-mono text-muted-foreground">{score}/100</span>
+                              </div>
+                              <div className="h-2 rounded-full bg-muted">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${score}%` }}
+                                  transition={{ duration: 0.5, delay: index * 0.08 }}
+                                  className={cn('h-2 rounded-full', signal.color)}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Cost breakdown */}
                   <div>
                     <h4 className="text-sm font-medium mb-3">Cost Breakdown</h4>
@@ -227,35 +287,58 @@ export function HospitalCard({
                   {/* Doctors */}
                   {hospital.doctors.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium mb-2">Doctors</h4>
+                      <h4 className="text-sm font-medium mb-2">Doctors &amp; Appointment Actions</h4>
                       <div className="space-y-2">
                         {hospital.doctors.map((doctor) => (
-                          <div
+                          <DoctorCard
                             key={doctor.id}
-                            className="flex items-center justify-between text-sm"
-                          >
-                            <span>{doctor.name}</span>
-                            <span className="text-muted-foreground">
-                              {doctor.specialization} · {doctor.experience_years} yrs
-                            </span>
-                          </div>
+                            doctor={doctor}
+                            hospitalName={hospital.name}
+                            procedure={procedure}
+                          />
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Reviews */}
-                  {hospital.reviews.length > 0 && (
+                  {/* Patient voice */}
+                  {hospital.sentiment_data && (
                     <div>
-                      <h4 className="text-sm font-medium mb-2">Patient Reviews</h4>
-                      <div className="space-y-2">
-                        {hospital.reviews.slice(0, 2).map((review) => (
-                          <p
-                            key={review.id}
-                            className="text-sm text-muted-foreground italic"
-                          >
-                            &quot;{review.excerpt}&quot;
-                          </p>
+                      <h4 className="mb-2 text-sm font-medium">Patient Voice (NLP)</h4>
+                      <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+                        <p className="text-xs text-muted-foreground">
+                          Overall positive sentiment: <span className="font-semibold text-foreground">{hospital.sentiment_data.positive_pct}%</span>
+                        </p>
+                        <div className="space-y-2">
+                          {sentimentThemes.map((theme) => (
+                            <div key={theme.theme} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium text-foreground">{theme.theme}</span>
+                                <span className="text-muted-foreground">{theme.mentions} mentions · {theme.positive_pct}% positive</span>
+                              </div>
+                              <div className="h-1.5 rounded-full bg-muted">
+                                <div className="h-1.5 rounded-full bg-primary" style={{ width: `${theme.positive_pct}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="space-y-1">
+                          {hospital.sentiment_data.sample_quotes.slice(0, 2).map((quote, idx) => (
+                            <p key={`${quote.text}-${idx}`} className="text-xs italic text-muted-foreground">
+                              &quot;{quote.text}&quot; ({quote.sentiment})
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {hospital.risk_flags && hospital.risk_flags.length > 0 && (
+                    <div>
+                      <h4 className="mb-2 text-sm font-medium">Cost Risk Flags</h4>
+                      <div className="space-y-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                        {hospital.risk_flags.map((flag) => (
+                          <p key={flag}>- {flag}</p>
                         ))}
                       </div>
                     </div>

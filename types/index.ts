@@ -33,6 +33,15 @@ export interface ClinicalMapping {
   category: string;
   pathway: PathwayStep[];
   confidence: number;
+  confidence_factors?: ConfidenceFactor[];
+}
+
+export interface ConfidenceFactor {
+  key: 'data_availability' | 'pricing_consistency' | 'recency' | 'patient_complexity';
+  label: string;
+  score: number;
+  weight: number;
+  note?: string;
 }
 
 // Hospital Types
@@ -94,6 +103,9 @@ export interface Doctor {
   rating?: number;
   fee_min?: number;
   fee_max?: number;
+  booking_url?: string;
+  wait_time_days?: number;
+  available_slots?: string[];
 }
 
 export interface Review {
@@ -141,11 +153,19 @@ export interface CostEstimate {
   cost_range: CostRange;
   typical_range?: CostRange;
   confidence: number;
+  confidence_factors?: ConfidenceFactor[];
   cost_breakdown: CostBreakdown;
   comorbidity_warnings: string[];
   geo_adjustment?: GeoAdjustment;
   risk_adjustments?: RiskAdjustment[];
   data_sources?: string[];
+  tier_comparison?: TierComparison;
+}
+
+export interface TierComparison {
+  budget: CostRange;
+  mid: CostRange;
+  premium: CostRange;
 }
 
 // Search Data from AI response
@@ -158,6 +178,7 @@ export interface SearchData {
   query_location: string;
   cost_range: CostRange;
   confidence: number;
+  confidence_factors?: ConfidenceFactor[];
   cost_breakdown: CostBreakdown;
   comorbidity_warnings: string[];
   hospitals: Hospital[];
@@ -166,6 +187,7 @@ export interface SearchData {
   risk_adjustments?: RiskAdjustment[];
   data_sources?: string[];
   pathway?: PathwayStep[];
+  tier_comparison?: TierComparison;
 }
 
 // Patient Profile
@@ -176,6 +198,9 @@ export interface PatientProfile {
   budget_min: number;
   budget_max: number;
   location: string;
+  preferred_tier?: 'premium' | 'mid' | 'budget' | null;
+  priority_factor?: 'quality' | 'balance' | 'cost' | 'distance' | null;
+  insurance_type?: string | null;
 }
 
 // Lender Mode Types
@@ -198,6 +223,12 @@ export interface LenderRiskProfile {
     icu_probability: string;
     avg_los_days: string;
     readmission_rate: string;
+  };
+  procedure_risk_detail?: {
+    mortality_risk: number;
+    icu_probability: number;
+    avg_los_days: number;
+    readmission_rate: number;
   };
 }
 
@@ -222,6 +253,24 @@ export interface AppointmentChecklist {
   forms: string[];
 }
 
+export type AppointmentStatus = 'requested' | 'confirmed' | 'cancelled';
+
+export interface AppointmentRequest {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  doctorSpecialization: string;
+  hospitalName: string;
+  procedure: string;
+  slot: string;
+  patientName: string;
+  phone: string;
+  notes: string;
+  status: AppointmentStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // App State
 export interface AppState {
   conversation: Message[];
@@ -239,6 +288,17 @@ export interface AppState {
   resultsPanelOpen: boolean;
   lenderMode: boolean;
   lenderRiskProfile: LenderRiskProfile | null;
+  sortMode: 'best-match' | 'lowest-cost' | 'highest-rating' | 'nearest' | 'nabh-first';
+  filters: {
+    tier: 'all' | 'premium' | 'mid' | 'budget';
+    nabhOnly: boolean;
+    distanceKm: 5 | 10 | 25 | null;
+    rating: 4 | 4.5 | null;
+  };
+  emergencyMode: boolean;
+  activeHospitalId: string | null;
+  geoAdjustment: 'auto' | 'metro' | 'tier2' | 'tier3';
+  appointmentRequests: AppointmentRequest[];
 }
 
 export type AppAction =
@@ -257,5 +317,14 @@ export type AppAction =
   | { type: 'TOGGLE_RESULTS_PANEL' }
   | { type: 'SET_LENDER_MODE'; payload: boolean }
   | { type: 'SET_LENDER_RISK_PROFILE'; payload: LenderRiskProfile | null }
+  | { type: 'SET_SORT_MODE'; payload: AppState['sortMode'] }
+  | { type: 'SET_FILTERS'; payload: Partial<AppState['filters']> }
+  | { type: 'SET_EMERGENCY_MODE'; payload: boolean }
+  | { type: 'SET_ACTIVE_HOSPITAL'; payload: string | null }
+  | { type: 'SET_GEO_ADJUSTMENT'; payload: AppState['geoAdjustment'] }
+  | { type: 'UPSERT_APPOINTMENT_REQUEST'; payload: AppointmentRequest }
+  | { type: 'SET_APPOINTMENT_REQUEST_STATUS'; payload: { id: string; status: AppointmentStatus } }
+  | { type: 'REMOVE_APPOINTMENT_REQUEST'; payload: string }
+  | { type: 'HYDRATE_APPOINTMENT_REQUESTS'; payload: AppointmentRequest[] }
   | { type: 'CLEAR_CONVERSATION' }
   | { type: 'CLEAR_COMPARE' };

@@ -14,7 +14,7 @@ export function CompareBar({ hospitals, onRemove, onCompareNow }: CompareBarProp
   if (hospitals.length === 0) return null;
 
   return (
-    <div className="fixed bottom-3 left-3 right-3 z-40 rounded-xl border border-border bg-card p-3 shadow-xl lg:left-72 lg:right-8">
+    <div className="fixed bottom-3 left-3 right-3 z-40 rounded-xl border border-border bg-card p-3 shadow-xl lg:left-20 xl:left-72 lg:right-8">
       <div className="flex flex-wrap items-center gap-2">
         <p className="mr-2 text-sm font-medium">Compare</p>
         {hospitals.map((hospital) => (
@@ -25,9 +25,14 @@ export function CompareBar({ hospitals, onRemove, onCompareNow }: CompareBarProp
             </button>
           </span>
         ))}
+        {hospitals.length < 3 && (
+          <span className="inline-flex items-center rounded-full border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">
+            + Add ({3 - hospitals.length} slot{3 - hospitals.length !== 1 ? 's' : ''} left)
+          </span>
+        )}
         <div className="ml-auto">
           <Button size="sm" onClick={onCompareNow} disabled={hospitals.length < 2}>
-            Compare Now
+            Compare Now ({hospitals.length}/3)
           </Button>
         </div>
       </div>

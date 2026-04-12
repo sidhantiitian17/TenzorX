@@ -91,6 +91,36 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
           )}
         </div>
 
+        {estimate.tier_comparison && (
+          <div className="rounded-lg border border-border p-3">
+            <p className="mb-2 text-sm font-medium">Compare cost by hospital tier</p>
+            <div className="grid gap-2 text-sm sm:grid-cols-3">
+              <TierCell label="Budget" value={estimate.tier_comparison.budget} />
+              <TierCell label="Mid-tier" value={estimate.tier_comparison.mid} featured />
+              <TierCell label="Premium" value={estimate.tier_comparison.premium} />
+            </div>
+          </div>
+        )}
+
+        {estimate.confidence_factors && estimate.confidence_factors.length > 0 && (
+          <div className="rounded-lg border border-border p-3">
+            <p className="mb-2 text-sm font-medium">Confidence drivers</p>
+            <div className="space-y-2">
+              {estimate.confidence_factors.map((factor) => (
+                <div key={factor.key} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">{factor.label}</span>
+                    <span className="font-mono text-muted-foreground">{factor.score}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div className="h-2 rounded-full bg-primary" style={{ width: `${factor.score}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {estimate.geo_adjustment && (
           <p className="text-xs text-muted-foreground">
             Cost adjusted for {estimate.geo_adjustment.city_name} ({estimate.geo_adjustment.city_tier}).
@@ -172,14 +202,14 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                 >
-                  <ul className="text-sm text-muted-foreground space-y-1.5 pt-2 pl-5 list-disc">
-                    <li>Extended ICU or HDU stay</li>
-                    <li>Complications requiring additional procedures</li>
-                    <li>Premium room upgrades</li>
-                    <li>Geographic cost variation</li>
-                    <li>Choice of implants or consumables</li>
-                    <li>Pre-existing conditions (diabetes, hypertension)</li>
-                  </ul>
+                  <div className="space-y-2 pt-2 text-sm text-muted-foreground">
+                    <p>Extended ICU or HDU stay</p>
+                    <p>Complications requiring additional procedures</p>
+                    <p>Premium room upgrades</p>
+                    <p>Geographic cost variation</p>
+                    <p>Choice of implants or consumables</p>
+                    <p>Pre-existing conditions (diabetes, hypertension)</p>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -199,5 +229,27 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function TierCell({
+  label,
+  value,
+  featured = false,
+}: {
+  label: string;
+  value: { min: number; max: number };
+  featured?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-md border px-3 py-2',
+        featured ? 'border-primary bg-primary/5' : 'border-border bg-card'
+      )}
+    >
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-sm font-medium">{formatCostRangeFull(value)}</p>
+    </div>
   );
 }

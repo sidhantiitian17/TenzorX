@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useAppDispatch, useAppState, useCompare } from '@/lib/context';
 import { buildCostEstimate, buildLenderRiskProfile, generateMockSearchData } from '@/lib/mockData';
-import type { Message } from '@/types';
+import type { AppState, Hospital, Message } from '@/types';
 
 import { DisclaimerBanner } from '@/components/shared/DisclaimerBanner';
 import { Header } from '@/components/layout/Header';
@@ -39,6 +39,11 @@ export default function HomePage() {
   const selectedHospitals = useMemo(
     () => state.searchResults.filter((h: { id: string }) => selectedIds.includes(h.id)),
     [selectedIds, state.searchResults]
+  );
+
+  const visibleHospitals = useMemo(
+    () => applyHospitalFiltersAndSort(state.searchResults, state.sortMode, state.filters),
+    [state.filters, state.searchResults, state.sortMode]
   );
 
   const handleSendMessage = useCallback(
@@ -94,6 +99,8 @@ export default function HomePage() {
 
       dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
+      dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
+      dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
       dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
       dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
       dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
@@ -103,7 +110,7 @@ export default function HomePage() {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="flex min-h-screen flex-col overflow-hidden bg-background">
       <DisclaimerBanner />
 
       <Header onOpenProfile={() => setProfileModalOpen(true)} />
@@ -121,7 +128,7 @@ export default function HomePage() {
           onLoadQuery={(query: string) => handleSendMessage(query)}
         />
 
-        <main className="flex min-w-0 flex-1 flex-col lg:w-[60%]">
+        <main className="flex min-w-0 flex-1 flex-col lg:min-w-120">
           <ChatWindow
             messages={state.conversation}
             isLoading={state.isLoading}
@@ -141,7 +148,7 @@ export default function HomePage() {
           </aside>
         ) : (
           <ResultsPanel
-            hospitals={state.searchResults}
+            hospitals={visibleHospitals}
             costEstimate={state.costEstimate}
             selectedIds={selectedIds}
             onToggleCompare={toggleCompare}
@@ -150,23 +157,25 @@ export default function HomePage() {
             riskAdjustments={state.costEstimate?.risk_adjustments || []}
             dataSources={state.costEstimate?.data_sources || []}
             onCorrectMapping={() => handleSendMessage('Actually, I meant...')}
-            className="hidden w-[40%] max-w-lg lg:flex"
+            className="hidden w-88 max-w-lg lg:flex xl:w-md 2xl:w-lg"
           />
         )}
       </div>
 
       <AnimatePresence>
-        {state.searchResults.length > 0 && !mobileResultsOpen && !state.lenderMode && (
+        {visibleHospitals.length > 0 && !mobileResultsOpen && !state.lenderMode && (
           <MobileResultsButton
-            count={state.searchResults.length}
+            count={visibleHospitals.length}
             onClick={() => setMobileResultsOpen(true)}
           />
         )}
       </AnimatePresence>
 
       <MobileResultsSheet
-        hospitals={state.searchResults}
+        hospitals={visibleHospitals}
         costEstimate={state.costEstimate}
+        clinicalMapping={state.clinicalMapping}
+        onCorrectMapping={() => handleSendMessage('Actually, I meant...')}
         selectedIds={selectedIds}
         onToggleCompare={toggleCompare}
         isOpen={mobileResultsOpen}
@@ -203,4 +212,50 @@ function extractLocation(query: string, fallback: string): string {
   const match = cities.find((city) => query.toLowerCase().includes(city));
   if (!match) return fallback;
   return match.charAt(0).toUpperCase() + match.slice(1);
+}
+
+function applyHospitalFiltersAndSort(
+  hospitals: Hospital[],
+  sortMode: AppState['sortMode'],
+  filters: AppState['filters']
+): Hospital[] {
+  const filtered = hospitals.filter((hospital) => {
+    if (filters.tier !== 'all' && hospital.tier !== filters.tier) {
+      return false;
+    }
+    if (filters.nabhOnly && !hospital.nabh_accredited) {
+      return false;
+    }
+    if (filters.distanceKm !== null && hospital.distance_km > filters.distanceKm) {
+      return false;
+    }
+    if (filters.rating !== null && hospital.rating < filters.rating) {
+      return false;
+    }
+    return true;
+  });
+
+  const sorted = [...filtered];
+  sorted.sort((a, b) => {
+    if (sortMode === 'lowest-cost') {
+      const aMid = (a.cost_range.min + a.cost_range.max) / 2;
+      const bMid = (b.cost_range.min + b.cost_range.max) / 2;
+      return aMid - bMid;
+    }
+    if (sortMode === 'highest-rating') {
+      return b.rating - a.rating;
+    }
+    if (sortMode === 'nearest') {
+      return a.distance_km - b.distance_km;
+    }
+    if (sortMode === 'nabh-first') {
+      if (a.nabh_accredited !== b.nabh_accredited) {
+        return a.nabh_accredited ? -1 : 1;
+      }
+      return (b.rank_score ?? 0) - (a.rank_score ?? 0);
+    }
+    return (b.rank_score ?? 0) - (a.rank_score ?? 0);
+  });
+
+  return sorted;
 }

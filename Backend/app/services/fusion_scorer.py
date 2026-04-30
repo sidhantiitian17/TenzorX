@@ -427,7 +427,7 @@ class DataFusionScorer:
         """
         try:
             daily_cost = cost_metrics.get('cost_per_day', 10000)
-            insurance_coverage = cost_metrics.get('insurance_coverage_percent', 0.5)
+            insurance_coverage = cost_metrics.get('insurance_coverage_percent', 50) / 100.0  # Convert percentage to decimal
             payment_plan_available = cost_metrics.get('payment_plan_available', True)
 
             # Cost scoring with sigmoid (higher cost = lower score)

@@ -60,7 +60,7 @@ The TenzorX HealthNav application now has full Google Maps integration for hospi
 
 ## API Key Details
 
-**Configured API Key**: `AIzaSyDZPw2qU4kiYmWSjUmQAPmYcLQSNidyuv0`
+**Configured API Key**: `
 
 **Enabled APIs**:
 - ✓ Maps SDK for Web

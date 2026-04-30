@@ -1,0 +1,80 @@
+[
+  {
+    "procedure": "angioplasty",
+    "icd10_code": "I25.10",
+    "duration_hrs": 3,
+    "stay_days": "3-5",
+    "city_tier": {
+      "metro": {"min": 120000, "max": 300000, "typical": 180000},
+      "tier2": {"min": 100000, "max": 250000, "typical": 150000},
+      "tier3": {"min": 80000, "max": 200000, "typical": 120000}
+    },
+    "comorbidity_factors": {
+      "diabetes": {"multiplier": 1.25, "icu_prob": 0.18},
+      "heart_failure": {"multiplier": 1.55, "icu_prob": 0.35},
+      "kidney_disease": {"multiplier": 1.40, "icu_prob": 0.25}
+    }
+  },
+  {
+    "procedure": "total knee arthroplasty",
+    "icd10_code": "M17.11",
+    "duration_hrs": 2.5,
+    "stay_days": "4-6",
+    "city_tier": {
+      "metro": {"min": 200000, "max": 450000, "typical": 300000},
+      "tier2": {"min": 150000, "max": 350000, "typical": 230000},
+      "tier3": {"min": 100000, "max": 250000, "typical": 160000}
+    },
+    "comorbidity_factors": {
+      "diabetes": {"multiplier": 1.20, "icu_prob": 0.10},
+      "cardiac_history": {"multiplier": 1.35, "icu_prob": 0.20},
+      "obesity": {"multiplier": 1.15, "icu_prob": 0.08}
+    }
+  },
+  {
+    "procedure": "cataract surgery",
+    "icd10_code": "H25.9",
+    "duration_hrs": 1,
+    "stay_days": "0-1",
+    "city_tier": {
+      "metro": {"min": 20000, "max": 80000, "typical": 40000},
+      "tier2": {"min": 15000, "max": 60000, "typical": 30000},
+      "tier3": {"min": 10000, "max": 40000, "typical": 20000}
+    },
+    "comorbidity_factors": {
+      "diabetes": {"multiplier": 1.10, "icu_prob": 0.02},
+      "glaucoma": {"multiplier": 1.15, "icu_prob": 0.03}
+    }
+  },
+  {
+    "procedure": "dialysis",
+    "icd10_code": "Z99.2",
+    "duration_hrs": 4,
+    "stay_days": "0",
+    "city_tier": {
+      "metro": {"min": 3000, "max": 8000, "typical": 5000},
+      "tier2": {"min": 2500, "max": 6000, "typical": 4000},
+      "tier3": {"min": 2000, "max": 4500, "typical": 3000}
+    },
+    "comorbidity_factors": {
+      "diabetes": {"multiplier": 1.15, "icu_prob": 0.05},
+      "hypertension": {"multiplier": 1.10, "icu_prob": 0.03}
+    }
+  },
+  {
+    "procedure": "cabg",
+    "icd10_code": "I25.10",
+    "duration_hrs": 4,
+    "stay_days": "7-10",
+    "city_tier": {
+      "metro": {"min": 200000, "max": 500000, "typical": 350000},
+      "tier2": {"min": 150000, "max": 400000, "typical": 280000},
+      "tier3": {"min": 120000, "max": 300000, "typical": 200000}
+    },
+    "comorbidity_factors": {
+      "diabetes": {"multiplier": 1.30, "icu_prob": 0.25},
+      "kidney_disease": {"multiplier": 1.45, "icu_prob": 0.30},
+      "copd": {"multiplier": 1.35, "icu_prob": 0.22}
+    }
+  }
+]

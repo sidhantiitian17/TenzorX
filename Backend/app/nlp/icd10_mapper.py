@@ -1,0 +1,215 @@
+"""
+ICD-10 Code Mapper.
+
+Maps extracted medical entities to ICD-10 CM codes using JSON lookup
+and LLM-assisted fuzzy matching when direct lookup fails.
+"""
+
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Optional, Dict, Any, List
+
+from app.core.nvidia_client import NvidiaClient
+
+logger = logging.getLogger(__name__)
+
+
+class ICD10Mapper:
+    """
+    Maps medical entity text to ICD-10 CM codes.
+    Uses 2022 ICD-10 CM JSON dataset as controlled vocabulary.
+    LLM used for fuzzy matching when direct lookup fails.
+    """
+
+    DEFAULT_DATA_PATH = "data/icd10_2022.json"
+
+    def __init__(self, icd10_json_path: Optional[str] = None):
+        self.llm = NvidiaClient(temperature=0.0, max_tokens=512)
+        
+        data_path = icd10_json_path or self.DEFAULT_DATA_PATH
+        self.code_map: Dict[str, str] = {}  # code -> description
+        self.desc_map: Dict[str, str] = {}  # description_lower -> code
+        
+        self._load_data(data_path)
+
+    def _load_data(self, data_path: str):
+        """Load ICD-10 data from JSON file."""
+        path = Path(data_path)
+        
+        if not path.exists():
+            logger.warning(f"ICD-10 data file not found: {data_path}")
+            # Try alternative paths
+            alt_paths = [
+                Path("Backend") / data_path,
+                Path("..") / data_path,
+                Path(os.getcwd()) / data_path,
+            ]
+            for alt in alt_paths:
+                if alt.exists():
+                    path = alt
+                    break
+        
+        if not path.exists():
+            logger.error(f"ICD-10 data file not found in any location")
+            return
+
+        try:
+            with open(path, encoding="utf-8") as f:
+                raw = json.load(f)
+            
+            # Build lookup maps
+            self._flatten_data(raw)
+            
+            # Build reverse map
+            self.desc_map = {
+                v.lower(): k for k, v in self.code_map.items()
+            }
+            
+            logger.info(f"ICD-10 mapper loaded: {len(self.code_map)} codes")
+            
+        except Exception as e:
+            logger.error(f"Failed to load ICD-10 data: {e}")
+
+    def _flatten_data(self, data: Any, result: Optional[Dict[str, str]] = None):
+        """Flatten nested ICD-10 JSON structure."""
+        if result is None:
+            result = {}
+            
+        if isinstance(data, dict):
+            # Check if this is a code entry
+            if "code" in data and "description" in data:
+                code = data["code"]
+                desc = data["description"]
+                result[code] = desc
+            
+            # Recurse into nested structures
+            for key, value in data.items():
+                if isinstance(value, (dict, list)):
+                    self._flatten_data(value, result)
+                    
+        elif isinstance(data, list):
+            for item in data:
+                self._flatten_data(item, result)
+                
+        self.code_map = result
+
+    def lookup(self, term: str) -> Optional[Dict[str, str]]:
+        """
+        Look up ICD-10 code for a medical term.
+        
+        Step 1: Direct substring match in description map
+        Step 2: LLM-assisted mapping if not found
+        
+        Args:
+            term: Medical term or condition name
+            
+        Returns:
+            Dict with "code" and "description" or None
+        """
+        term_lower = term.lower().strip()
+        
+        # Direct match
+        if term_lower in self.desc_map:
+            code = self.desc_map[term_lower]
+            return {"code": code, "description": self.code_map[code]}
+        
+        # Partial substring match
+        for desc, code in self.desc_map.items():
+            if term_lower in desc or desc in term_lower:
+                return {"code": code, "description": self.code_map[code]}
+        
+        # Word-level matching for compound terms
+        term_words = set(term_lower.split())
+        best_match = None
+        best_score = 0
+        
+        for desc, code in self.desc_map.items():
+            desc_words = set(desc.split())
+            overlap = len(term_words & desc_words)
+            if overlap > best_score and overlap >= len(term_words) * 0.5:
+                best_score = overlap
+                best_match = (code, desc)
+        
+        if best_match:
+            return {"code": best_match[0], "description": best_match[1]}
+        
+        # LLM-assisted fuzzy mapping as fallback
+        return self._llm_map(term)
+
+    def _llm_map(self, term: str) -> Optional[Dict[str, str]]:
+        """
+        Use NVIDIA LLM to suggest the best ICD-10 code.
+        
+        Args:
+            term: Medical term to map
+            
+        Returns:
+            Dict with "code" and "description" or None
+        """
+        system_prompt = (
+            "You are a medical coding assistant. Given a medical term or symptom, "
+            "return ONLY the best matching ICD-10 CM code and its official description. "
+            "Format: CODE|DESCRIPTION. Example: M17.11|Primary osteoarthritis, right knee. "
+            "If unknown, return: UNKNOWN|unknown"
+        )
+        
+        try:
+            response = self.llm.simple_prompt(
+                prompt=f"Find ICD-10 CM code for: {term}",
+                system_prompt=system_prompt,
+                temperature=0.0,
+                max_tokens=100,
+            )
+            
+            if "|" in response and "UNKNOWN" not in response.upper():
+                parts = response.strip().split("|", 1)
+                if len(parts) == 2:
+                    code, description = parts
+                    return {
+                        "code": code.strip(),
+                        "description": description.strip()
+                    }
+        except Exception as e:
+            logger.warning(f"LLM mapping failed for '{term}': {e}")
+        
+        return None
+
+    def batch_lookup(self, terms: List[str]) -> List[Dict[str, Any]]:
+        """
+        Map multiple terms and return all successful mappings.
+        
+        Args:
+            terms: List of medical terms
+            
+        Returns:
+            List of dicts with "term", "code", and "description"
+        """
+        results = []
+        for term in terms:
+            result = self.lookup(term)
+            if result:
+                results.append({
+                    "term": term,
+                    "code": result["code"],
+                    "description": result["description"]
+                })
+        return results
+
+    def get_description(self, code: str) -> Optional[str]:
+        """Get description for an ICD-10 code."""
+        return self.code_map.get(code)
+
+    def search_by_description(self, query: str, limit: int = 5) -> List[Dict[str, str]]:
+        """Search for codes by partial description match."""
+        query_lower = query.lower()
+        matches = []
+        
+        for code, desc in self.code_map.items():
+            if query_lower in desc.lower():
+                matches.append({"code": code, "description": desc})
+                if len(matches) >= limit:
+                    break
+        
+        return matches

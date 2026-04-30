@@ -439,3 +439,41 @@ class GeoPricingService:
                 "status": "unhealthy",
                 "error": str(e)
             }
+
+
+# Global service instance for module-level convenience functions
+_geo_pricing_service: Optional[GeoPricingService] = None
+
+
+def _get_geo_pricing_service() -> GeoPricingService:
+    """Get or create the global geo-pricing service instance."""
+    global _geo_pricing_service
+    if _geo_pricing_service is None:
+        _geo_pricing_service = GeoPricingService()
+    return _geo_pricing_service
+
+
+async def resolve_location(address: str) -> Optional[LocationData]:
+    """
+    Resolve unstructured location string to structured location data.
+
+    This is a convenience function that wraps GeoPricingService.resolve_location
+    for use by other modules.
+
+    Args:
+        address: Raw address string (e.g., "Nagpur, Maharashtra")
+
+    Returns:
+        Structured location data with coordinates and tier, or None if resolution fails
+    """
+    try:
+        service = _get_geo_pricing_service()
+        # Run the synchronous resolve_location in a thread pool
+        import asyncio
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, service.resolve_location, address)
+        return result
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Location resolution failed for {address}: {e}")
+        return None

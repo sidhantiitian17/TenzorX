@@ -16,6 +16,15 @@ neo4j>=5.20.0
 vaderSentiment>=3.3.2
 numpy>=1.24.0
 geopy>=2.4.0
+scikit-learn>=1.5.0
+
+# NLP Dependencies
+spacy>=3.7.0
+# scispaCy model - install separately: pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
+
+# XAI Dependencies
+shap>=0.45.0
+lime>=0.2.0
 
 # Development & Utilities
 python-dotenv==1.0.0

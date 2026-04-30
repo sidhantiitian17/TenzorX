@@ -1,0 +1,181 @@
+[
+  {
+    "id": "hosp_nagpur_001",
+    "name": "ABC Heart & Ortho Institute",
+    "address": "Civil Lines, Nagpur, Maharashtra 440001",
+    "city": "nagpur",
+    "tier": "mid",
+    "nabh_accredited": true,
+    "rating": 4.5,
+    "review_count": 312,
+    "lat": 21.1458,
+    "lon": 79.0882,
+    "bed_count": 250,
+    "specialists_count": 5,
+    "has_emergency": true,
+    "has_icu": true,
+    "specializations": ["Cardiology", "Orthopedics", "General Surgery"],
+    "cost_range": {"min": 140000, "max": 220000},
+    "reviews": [
+      "Excellent surgery outcome. Dr. Patel was very experienced.",
+      "Staff was helpful but waiting time was long.",
+      "Cost was transparent, no hidden charges.",
+      "Clean facility with modern equipment."
+    ]
+  },
+  {
+    "id": "hosp_nagpur_002",
+    "name": "City Care Hospital",
+    "address": "Manish Nagar, Nagpur, Maharashtra 440034",
+    "city": "nagpur",
+    "tier": "budget",
+    "nabh_accredited": false,
+    "rating": 3.8,
+    "review_count": 156,
+    "lat": 21.1000,
+    "lon": 79.0500,
+    "bed_count": 100,
+    "specialists_count": 2,
+    "has_emergency": true,
+    "has_icu": false,
+    "specializations": ["General Medicine", "Orthopedics"],
+    "cost_range": {"min": 80000, "max": 150000},
+    "reviews": [
+      "Affordable care for basic procedures.",
+      "Good for minor surgeries."
+    ]
+  },
+  {
+    "id": "hosp_raipur_001",
+    "name": "Apollo Hospitals Raipur",
+    "address": "Tatibandh, Raipur, Chhattisgarh 492001",
+    "city": "raipur",
+    "tier": "premium",
+    "nabh_accredited": true,
+    "rating": 4.7,
+    "review_count": 450,
+    "lat": 21.2500,
+    "lon": 81.6300,
+    "bed_count": 300,
+    "specialists_count": 8,
+    "has_emergency": true,
+    "has_icu": true,
+    "specializations": ["Cardiology", "Neurology", "Orthopedics", "Oncology"],
+    "cost_range": {"min": 180000, "max": 350000},
+    "reviews": [
+      "World-class facilities and experienced doctors.",
+      "Expensive but worth the quality.",
+      "Best cardiac care in the region."
+    ]
+  },
+  {
+    "id": "hosp_raipur_002",
+    "name": "Ramkrishna Care Hospital",
+    "address": "Pachpedi Naka, Raipur, Chhattisgarh 492001",
+    "city": "raipur",
+    "tier": "mid",
+    "nabh_accredited": true,
+    "rating": 4.3,
+    "review_count": 280,
+    "lat": 21.2400,
+    "lon": 81.6100,
+    "bed_count": 200,
+    "specialists_count": 4,
+    "has_emergency": true,
+    "has_icu": true,
+    "specializations": ["Cardiology", "Orthopedics", "Nephrology"],
+    "cost_range": {"min": 120000, "max": 200000},
+    "reviews": [
+      "Good quality care at reasonable prices.",
+      "NABH accredited facility with experienced staff."
+    ]
+  },
+  {
+    "id": "hosp_bhopal_001",
+    "name": "Bansal Hospital",
+    "address": "Shahpura, Bhopal, Madhya Pradesh 462039",
+    "city": "bhopal",
+    "tier": "mid",
+    "nabh_accredited": true,
+    "rating": 4.2,
+    "review_count": 220,
+    "lat": 23.2599,
+    "lon": 77.4126,
+    "bed_count": 150,
+    "specialists_count": 3,
+    "has_emergency": true,
+    "has_icu": true,
+    "specializations": ["Orthopedics", "Cardiology", "Gastroenterology"],
+    "cost_range": {"min": 110000, "max": 180000},
+    "reviews": [
+      "Trusted hospital for knee replacements.",
+      "Professional staff and clean environment."
+    ]
+  },
+  {
+    "id": "hosp_indore_001",
+    "name": "CHL Hospitals",
+    "address": "A.B. Road, Indore, Madhya Pradesh 452001",
+    "city": "indore",
+    "tier": "premium",
+    "nabh_accredited": true,
+    "rating": 4.6,
+    "review_count": 380,
+    "lat": 22.7196,
+    "lon": 75.8577,
+    "bed_count": 275,
+    "specialists_count": 6,
+    "has_emergency": true,
+    "has_icu": true,
+    "specializations": ["Cardiology", "Neurology", "Orthopedics", "Urology"],
+    "cost_range": {"min": 160000, "max": 300000},
+    "reviews": [
+      "Excellent cardiac care facility.",
+      "Modern infrastructure and skilled doctors."
+    ]
+  },
+  {
+    "id": "hosp_surat_001",
+    "name": "Surat Heart Institute",
+    "address": "Ring Road, Surat, Gujarat 395002",
+    "city": "surat",
+    "tier": "mid",
+    "nabh_accredited": true,
+    "rating": 4.4,
+    "review_count": 290,
+    "lat": 21.1702,
+    "lon": 72.8311,
+    "bed_count": 180,
+    "specialists_count": 4,
+    "has_emergency": true,
+    "has_icu": true,
+    "specializations": ["Cardiology", "Cardiac Surgery"],
+    "cost_range": {"min": 130000, "max": 210000},
+    "reviews": [
+      "Specialized cardiac care with good outcomes.",
+      "Transparent pricing and insurance friendly."
+    ]
+  },
+  {
+    "id": "hosp_patna_001",
+    "name": "Paras HMRI Hospital",
+    "address": "Raja Bazar, Patna, Bihar 800014",
+    "city": "patna",
+    "tier": "mid",
+    "nabh_accredited": true,
+    "rating": 4.1,
+    "review_count": 195,
+    "lat": 25.5941,
+    "lon": 85.1376,
+    "bed_count": 165,
+    "specialists_count": 3,
+    "has_emergency": true,
+    "has_icu": true,
+    "specializations": ["Cardiology", "Orthopedics", "Neurosurgery"],
+    "cost_range": {"min": 100000, "max": 170000},
+    "reviews": [
+      "Good multi-specialty care in Patna.",
+      "Affordable compared to metro cities."
+    ]
+  }
+]

@@ -4,6 +4,12 @@ import { useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useAppDispatch, useAppState, useCompare } from '@/lib/context';
 import { buildCostEstimate, buildLenderRiskProfile, generateMockSearchData } from '@/lib/mockData';
+import {
+  callTriageAPI,
+  searchHospitalsAPI,
+  transformTriageToSearchData,
+  APIError,
+} from '@/lib/api';
 import type { AppState, Hospital, Message } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -67,48 +73,127 @@ export default function HomePage() {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ACTIVE_QUERY', payload: query });
 
-      await new Promise((resolve) => setTimeout(resolve, 900));
-
       const location = extractLocation(query, state.patientProfile?.location || 'Nagpur');
-      const searchData = generateMockSearchData(query, location);
 
-      if (state.patientProfile?.comorbidities.length) {
-        searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
-          (condition: string) =>
-            `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
+      try {
+        // Try to call the backend API first
+        const triageResponse = await callTriageAPI(
+          query,
+          state.patientProfile
+            ? {
+                age: state.patientProfile.age ?? undefined,
+                location: state.patientProfile.location,
+                known_comorbidities: state.patientProfile.comorbidities,
+              }
+            : undefined,
+          undefined
         );
+
+        // Search for hospitals from backend
+        let hospitals: Hospital[] = [];
+        try {
+          hospitals = await searchHospitalsAPI({
+            location,
+            limit: 3,
+            min_rating: 3,
+          });
+        } catch {
+          // If hospital search fails, we'll continue with empty hospitals
+          hospitals = [];
+        }
+
+        // Transform backend response to frontend format
+        const searchData = transformTriageToSearchData(triageResponse, hospitals, query, location);
+
+        if (state.patientProfile?.comorbidities.length) {
+          searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
+            (condition: string) =>
+              `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
+          );
+        }
+
+        const estimate = buildCostEstimate(searchData);
+        const lenderRisk = buildLenderRiskProfile(estimate);
+        const hospitalCount = searchData.hospitals.length;
+        const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
+
+        // Use the LLM-generated response from the backend
+        let response = triageResponse.agent_response;
+
+        // If backend response is too short, enhance it with hospital info
+        if (response.length < 100 && hospitalCount > 0) {
+          response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.\n\n`;
+          response += `Estimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.\n\n`;
+          response += triageResponse.agent_response;
+        }
+
+        if (isEmergency) {
+          response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
+        }
+
+        const aiMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response,
+          timestamp: new Date(),
+          searchData,
+        };
+
+        dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+        dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
+        dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
+        dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
+        dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
+        dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
+        dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
+      } catch (error) {
+        // Backend is down or returned an error - fallback to mock data
+        console.warn('Backend unavailable, falling back to mock data:', error);
+
+        await new Promise((resolve) => setTimeout(resolve, 900));
+
+        const searchData = generateMockSearchData(query, location);
+
+        if (state.patientProfile?.comorbidities.length) {
+          searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
+            (condition: string) =>
+              `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
+          );
+        }
+
+        const estimate = buildCostEstimate(searchData);
+        const lenderRisk = buildLenderRiskProfile(estimate);
+        const hospitalCount = searchData.hospitals.length;
+        const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
+
+        let response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.`;
+        response += `\n\nEstimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.`;
+
+        if (isEmergency) {
+          response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
+        }
+
+        response += '\n\n*(Using offline data - backend LLM service unavailable)*';
+        response += '\n\nDecision support only. Please consult a qualified doctor before making medical decisions.';
+
+        const aiMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response,
+          timestamp: new Date(),
+          searchData,
+        };
+
+        dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+        dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
+        dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
+        dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
+        dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
+        dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
+        dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
-
-      const estimate = buildCostEstimate(searchData);
-      const lenderRisk = buildLenderRiskProfile(estimate);
-      const hospitalCount = searchData.hospitals.length;
-      const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
-
-      let response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.`;
-      response += `\n\nEstimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.`;
-
-      if (isEmergency) {
-        response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
-      }
-
-      response += '\n\nDecision support only. Please consult a qualified doctor before making medical decisions.';
-
-      const aiMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-        searchData,
-      };
-
-      dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
-      dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
-      dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
-      dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
-      dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
-      dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
-      dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
-      dispatch({ type: 'SET_LOADING', payload: false });
     },
     [dispatch, state.patientProfile?.comorbidities, state.patientProfile?.location]
   );

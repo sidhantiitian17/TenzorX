@@ -9,10 +9,15 @@ Usage:
 
 Prerequisites:
     requests library installed (pip install requests)
+    NVIDIA_API_KEY set in .env file or environment variables
 """
 
 import sys
 import logging
+import os
+
+# Add Backend to path for importing settings
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Configure logging
 logging.basicConfig(
@@ -23,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_nvidia_endpoint_connectivity():
-    """Test that the NVIDIA API endpoint is reachable with the hardcoded API key."""
+    """Test that the NVIDIA API endpoint is reachable using API key from environment."""
     try:
         import requests
     except ImportError:
@@ -32,8 +37,15 @@ def test_nvidia_endpoint_connectivity():
         return None
 
     try:
+        from app.core.config import settings
+
         endpoint = "https://integrate.api.nvidia.com/v1/chat/completions"
-        api_key = "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"
+        api_key = settings.NVIDIA_API_KEY
+
+        if not api_key or api_key == "nvapi-your-nvidia-api-key-here":
+            logger.error("❌ NVIDIA_API_KEY not set in .env file or environment variables")
+            logger.info("   Set it in Backend/.env: NVIDIA_API_KEY=nvapi-your-key-here")
+            return False
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -60,7 +72,7 @@ def test_nvidia_endpoint_connectivity():
             return True
         elif response.status_code == 401:
             logger.error(f"❌ Authentication failed (HTTP {response.status_code})")
-            logger.error("   Check your hardcoded API key")
+            logger.error("   Check your NVIDIA_API_KEY in .env file")
             return False
         elif response.status_code == 429:
             logger.warning(f"⚠️  Rate limit exceeded (HTTP {response.status_code})")

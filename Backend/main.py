@@ -15,6 +15,11 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes.triage import router as triage_router
 from app.api.routes.hospitals import router as hospitals_router
+from app.api.routes.chat import router as chat_router
+from app.api.routes.cost import router as cost_router
+from app.api.routes.loan import router as loan_router
+from app.api.routes.compare import router as compare_router
+from app.api.routes.explain import router as explain_router
 from app.core.config import settings
 
 # ============================================================================
@@ -132,6 +137,11 @@ async def health_check() -> Dict[str, Any]:
 # ============================================================================
 app.include_router(triage_router, prefix=settings.API_V1_STR)
 app.include_router(hospitals_router, prefix=settings.API_V1_STR)
+app.include_router(chat_router, prefix=f"{settings.API_V1_STR}/chat")
+app.include_router(cost_router, prefix=f"{settings.API_V1_STR}/cost-estimate")
+app.include_router(loan_router, prefix=f"{settings.API_V1_STR}/loan-eligibility")
+app.include_router(compare_router, prefix=f"{settings.API_V1_STR}/compare")
+app.include_router(explain_router, prefix=f"{settings.API_V1_STR}/explain")
 logger.info(f"API routes registered under {settings.API_V1_STR}")
 
 

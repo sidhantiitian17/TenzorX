@@ -1,0 +1,13 @@
+# Core FastAPI Framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+langchain-core>=0.2.30
+requests>=2.31.0
+
+# Database
+neo4j>=5.20.0
+
+# Development & Utilities
+python-dotenv==1.0.0

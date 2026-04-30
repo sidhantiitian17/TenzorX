@@ -1,9 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { AppState, AppAction, PatientProfile } from '@/types';
-
-const APPOINTMENT_REQUESTS_KEY = 'healthnav-appointment-requests';
 
 const initialState: AppState = {
   conversation: [],
@@ -221,29 +219,6 @@ const AppDispatchContext = createContext<React.Dispatch<AppAction> | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(APPOINTMENT_REQUESTS_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-      dispatch({ type: 'HYDRATE_APPOINTMENT_REQUESTS', payload: parsed });
-    } catch {
-      // Ignore invalid persisted values.
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        APPOINTMENT_REQUESTS_KEY,
-        JSON.stringify(state.appointmentRequests)
-      );
-    } catch {
-      // Ignore storage write issues.
-    }
-  }, [state.appointmentRequests]);
 
   return (
     <AppStateContext.Provider value={state}>

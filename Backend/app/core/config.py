@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     Get from: https://integrate.api.nvidia.com/
     """
     
+    OPENAI_API_KEY: str = ""
+    """
+    OpenAI API key for embeddings in vector fallback.
+    Optional, used for FAISS vector database fallback.
+    """
+    
     # ============================================================================
     # Neo4j Database Configuration
     # ============================================================================

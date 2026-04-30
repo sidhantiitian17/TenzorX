@@ -33,7 +33,7 @@ def test_nvidia_endpoint_connectivity():
 
     try:
         endpoint = "https://integrate.api.nvidia.com/v1/chat/completions"
-        api_key = "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"
+        api_key = "Your API KEY"
 
         headers = {
             "Authorization": f"Bearer {api_key}",

@@ -47,7 +47,7 @@ class RealDataIntegrationTest:
 
     def __init__(self):
         """Initialize with real data sources."""
-        self.nvidia_api_key = os.getenv("NVIDIA_API_KEY", "")
+        self.nvidia_api_key = ""
         self.nvidia_invoke_url = "https://integrate.api.nvidia.com/v1/chat/completions"
 
         # Test hospital: Apollo Hospitals, Mumbai

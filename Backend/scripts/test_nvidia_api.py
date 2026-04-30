@@ -40,12 +40,7 @@ def test_nvidia_endpoint_connectivity():
         from app.core.config import settings
 
         endpoint = "https://integrate.api.nvidia.com/v1/chat/completions"
-        api_key = settings.NVIDIA_API_KEY
-
-        if not api_key or api_key == "nvapi-your-nvidia-api-key-here":
-            logger.error("❌ NVIDIA_API_KEY not set in .env file or environment variables")
-            logger.info("   Set it in Backend/.env: NVIDIA_API_KEY=nvapi-your-key-here")
-            return False
+        api_key = ""
 
         headers = {
             "Authorization": f"Bearer {api_key}",

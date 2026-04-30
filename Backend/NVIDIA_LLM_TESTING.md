@@ -3,6 +3,7 @@
 ## Quick Validation
 
 ### 1. **Check NVIDIA API Connectivity**
+
 Run the validation script to test your setup before starting the backend:
 
 ```bash
@@ -11,6 +12,7 @@ python scripts/test_nvidia_api.py
 ```
 
 This script validates:
+
 - ✅ NVIDIA_API_KEY environment variable is set
 - ✅ NVIDIA API endpoint is reachable
 - ✅ LangChain ChatOpenAI can be initialized
@@ -93,38 +95,42 @@ Expected response includes `agent_response` field with the LLM-generated text.
 The system now detects and reports:
 
 ### API Key Issues
-```
+
+```text
 ❌ NVIDIA API authentication failed: Invalid or expired NVIDIA_API_KEY
 ```
 
-### Connection Issues  
-```
+### Connection Issues
+
+```text
 ❌ Failed to connect to NVIDIA API endpoint: https://integrate.api.nvidia.com/v1
 ```
 
 ### Timeout Issues (>30s)
-```
+
+```text
 ❌ NVIDIA API timeout (30s exceeded)
 ```
 
 ### Rate Limiting
-```
+
+```text
 ❌ NVIDIA API rate limit exceeded. Please retry later.
 ```
 
 ## Log Levels
 
-| Level | What you see | Use case |
-|-------|-------------|----------|
-| DEBUG | All function calls, context formatting | Troubleshooting prompt issue |
-| INFO | LLM calls, response received, timing | Production monitoring |
-| WARNING | Non-critical failures (financial calc errors) | Alert on edge cases |
-| ERROR | API failures, auth errors, timeouts | Critical debugging |
+| Level  | What you see                      | Use case                      |
+|--------|----------------------------------|-------------------------------|
+| DEBUG  | All function calls, context formatting | Troubleshooting prompt issue |
+| INFO   | LLM calls, response received, timing | Production monitoring         |
+| WARNING| Non-critical failures (financial calc errors) | Alert on edge cases     |
+| ERROR  | API failures, auth errors, timeouts | Critical debugging           |
 
 ## Missing NVIDIA_API_KEY?
 
 If you don't have an API key yet, get one from:
-1. Go to https://build.nvidia.com/mistralai/mistral-large
+1. Go to <https://build.nvidia.com/mistralai/mistral-large>
 2. Sign in or create account
 3. Copy your API key
 4. Add to `.env`: `NVIDIA_API_KEY=nvapi-...`
@@ -142,11 +148,11 @@ Before deploying to production:
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| "NVIDIA_API_KEY not found" | Add to .env and restart backend |
-| "Timeout exceeded" | Increase API response time or check network |
-| "401 Unauthorized" | Verify API key is current (keys expire) |
+| Issue                  | Solution                                      |
+|------------------------|-----------------------------------------------|
+| "NVIDIA_API_KEY not found" | Add to .env and restart backend            |
+| "Timeout exceeded"     | Increase API response time or check network  |
+| "401 Unauthorized"     | Verify API key is current (keys expire)      |
 | "Response took too long" | NVIDIA API may be overloaded, retry |
 | "Empty LLM response" | Prompt template issue or model limitation |
 

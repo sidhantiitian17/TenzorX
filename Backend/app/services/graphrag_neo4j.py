@@ -17,7 +17,7 @@ Production Standards:
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, AsyncGenerator
 from dataclasses import dataclass
 
 from neo4j import AsyncGraphDatabase, AsyncDriver
@@ -138,10 +138,10 @@ class MedicalGraphRAG:
             
             # Create FAISS vector store
             self.fallback_vector_db = FAISS.from_documents(sample_docs, self.embeddings)
-            logger.info("✅ Fallback FAISS vector database initialized")
+            logger.info("Fallback FAISS vector database initialized")
             
         except Exception as e:
-            logger.warning(f"⚠️ Failed to initialize FAISS fallback: {e}. Vector fallback will be unavailable.")
+            logger.warning(f"WARNING: Failed to initialize FAISS fallback: {e}. Vector fallback will be unavailable.")
             self.fallback_vector_db = None
 
     async def __aenter__(self):
@@ -172,10 +172,10 @@ class MedicalGraphRAG:
 
             # Test connection
             await self._driver.verify_connectivity()
-            logger.info("✅ Neo4j connection established successfully")
+            logger.info("Neo4j connection established successfully")
 
         except Exception as e:
-            logger.error(f"❌ Failed to connect to Neo4j: {e}")
+            logger.error(f"ERROR: Failed to connect to Neo4j: {e}")
             raise ConnectionError(f"Neo4j connection failed: {e}") from e
 
     async def disconnect(self) -> None:
@@ -183,9 +183,9 @@ class MedicalGraphRAG:
         if self._driver:
             try:
                 await self._driver.close()
-                logger.info("✅ Neo4j connection closed")
+                logger.info("Neo4j connection closed")
             except Exception as e:
-                logger.warning(f"⚠️ Error closing Neo4j connection: {e}")
+                logger.warning(f"WARNING: Error closing Neo4j connection: {e}")
             finally:
                 self._driver = None
 
@@ -209,7 +209,7 @@ class MedicalGraphRAG:
             ConnectionError: If database connection is lost
         """
         try:
-            logger.info(f"🔍 Retrieving clinical pathway for ICD-10: {icd_code}")
+            logger.info(f"Retrieving clinical pathway for ICD-10: {icd_code}")
 
             if not self._driver:
                 raise ConnectionError("Not connected to Neo4j")
@@ -238,7 +238,7 @@ class MedicalGraphRAG:
                 record = await result.single()
 
                 if not record:
-                    logger.warning(f"⚠️ No pathway found for ICD-10: {icd_code}")
+                    logger.warning(f"WARNING: No pathway found for ICD-10: {icd_code}")
                     return ClinicalPathway(
                         icd_code=icd_code,
                         pathway=[],
@@ -343,11 +343,11 @@ class MedicalGraphRAG:
                     success_rate=success_rate
                 )
 
-                logger.info(f"✅ Retrieved pathway with {len(pathway_nodes)} nodes, confidence: {confidence_score:.3f}")
+                logger.info(f"Retrieved pathway with {len(pathway_nodes)} nodes, confidence: {confidence_score:.3f}")
                 return pathway
 
         except Exception as e:
-            logger.error(f"❌ Neo4j GraphRAG failed: {e}. Attempting vector database fallback...")
+            logger.error(f"ERROR: Neo4j GraphRAG failed: {e}. Attempting vector database fallback...")
 
             # --- FALLBACK 1: Vector Database (RAG) se unstructured data nikalna ---
             if self.fallback_vector_db and query_text:
@@ -397,14 +397,14 @@ class MedicalGraphRAG:
                             success_rate=0.7
                         )
 
-                        logger.info(f"🔄 Vector Fallback: Returned pathway for {icd_code} from FAISS search")
+                        logger.info(f"Vector Fallback: Returned pathway for {icd_code} from FAISS search")
                         return vector_pathway
 
                 except Exception as vec_e:
-                    logger.error(f"❌ Vector fallback also failed: {vec_e}")
+                    logger.error(f"ERROR: Vector fallback also failed: {vec_e}")
 
             # --- FALLBACK 2: Mock Data (Absolute worst-case) ---
-            logger.warning(f"⚠️ All fallbacks failed. Using hardcoded mock data for {icd_code}.")
+            logger.warning(f"WARNING: All fallbacks failed. Using hardcoded mock data for {icd_code}.")
 
             # Phase 3 ka mock data - adapted to ClinicalPathway format
             mock_pathways = {
@@ -522,7 +522,7 @@ class MedicalGraphRAG:
 
 # Utility functions for async context management
 @asynccontextmanager
-async def get_graph_rag() -> MedicalGraphRAG:
+async def get_graph_rag() -> AsyncGenerator[MedicalGraphRAG, None]:
     """
     Context manager for GraphRAG operations.
 

@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.routes.triage import router as triage_router
+from app.api.routes.hospitals import router as hospitals_router
 from app.core.config import settings
 
 # ============================================================================
@@ -58,7 +59,7 @@ async def lifespan(app: FastAPI):
     logger.info("🛑 Shutting down application...")
     # Close Neo4j driver connection
     # driver.close()
-    logger.info("✅ Shutdown complete")
+    logger.info("Shutdown complete")
 
 
 # ============================================================================
@@ -74,7 +75,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-logger.info("✅ FastAPI application created")
+logger.info("FastAPI application created")
 
 
 # ============================================================================
@@ -88,7 +89,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-logger.info(f"✅ CORS middleware configured for: {settings.BACKEND_CORS_ORIGINS}")
+logger.info(f"CORS middleware configured for: {settings.BACKEND_CORS_ORIGINS}")
 
 
 # ============================================================================
@@ -130,7 +131,8 @@ async def health_check() -> Dict[str, Any]:
 # API Router Placeholder
 # ============================================================================
 app.include_router(triage_router, prefix=settings.API_V1_STR)
-logger.info(f"✅ API routes registered under {settings.API_V1_STR}")
+app.include_router(hospitals_router, prefix=settings.API_V1_STR)
+logger.info(f"API routes registered under {settings.API_V1_STR}")
 
 
 # ============================================================================

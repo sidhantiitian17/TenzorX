@@ -480,7 +480,7 @@ This recommendation is based on available data and should not replace profession
     def print_comprehensive_report(self, results: Dict[str, Any]):
         """Print comprehensive pipeline results."""
         print("\n" + "="*80)
-        print("🏥 HEALTHCARE NAVIGATOR - REAL DATA ANALYSIS REPORT")
+        print("HEALTHCARE NAVIGATOR - REAL DATA ANALYSIS REPORT")
         print("="*80)
 
         # Data Sources Summary
@@ -513,7 +513,7 @@ This recommendation is based on available data and should not replace profession
 
 def main():
     """Main execution."""
-    print("🏥 Healthcare Navigator - Real Data Integration Test")
+    print("Healthcare Navigator - Real Data Integration Test")
     print("Fetching real clinical data, reviews, and metrics from public sources...")
 
     test = RealDataIntegrationTest()

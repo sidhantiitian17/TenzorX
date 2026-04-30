@@ -61,6 +61,7 @@ export function ResultsPanel({
     <AnimatePresence>
       {isOpen && hasResults && (
         <motion.aside
+          key="results-panel"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}

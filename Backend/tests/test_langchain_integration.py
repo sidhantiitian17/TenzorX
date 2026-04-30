@@ -12,6 +12,7 @@ Run with: pytest tests/test_langchain_integration.py -v
 
 import logging
 import pytest
+import os
 from typing import Any
 from unittest.mock import MagicMock, patch, call
 
@@ -24,6 +25,8 @@ from app.services.langchain_agent import (
     MANDATORY_MEDICAL_DISCLAIMER,
     NVIDIA_INVOKE_URL,
     NVIDIA_MODEL,
+    _build_llm,
+    NVIDIA_API_KEY_ENV,
 )
 from app.core.config import settings
 

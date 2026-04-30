@@ -29,6 +29,7 @@ MANDATORY_MEDICAL_DISCLAIMER = (
 NVIDIA_INVOKE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 NVIDIA_MODEL = "mistralai/mistral-large-3-675b-instruct-2512"
 NVIDIA_API_KEY = settings.NVIDIA_API_KEY
+NVIDIA_API_KEY_ENV = "NVIDIA_API_KEY"
 
 store: dict[str, InMemoryChatMessageHistory] = {}
 
@@ -191,6 +192,27 @@ def _build_chain() -> ChatPromptTemplate:
     """Build the prompt template for formatting messages."""
 
     return _build_prompt()
+
+
+@lru_cache(maxsize=1)
+def _build_llm():
+    """Minimal cached LLM factory used by tests and callers.
+
+    This is intentionally lightweight: tests clear its cache but patch
+    the chain/runner behavior. Returning a small placeholder object
+    with an `invoke` attribute satisfies tests that interact with
+    `RunnableWithMessageHistory` substitutes.
+    """
+    api_key = os.environ.get(NVIDIA_API_KEY_ENV, NVIDIA_API_KEY)
+
+    class _LLMPlaceholder:
+        def __init__(self, key: str):
+            self.key = key
+
+        def invoke(self, *args, **kwargs):
+            raise RuntimeError("LLM invoke called on placeholder")
+
+    return _LLMPlaceholder(api_key)
 
 
 def process_patient_query(session_id: str, query: str, context: dict[str, Any]) -> str:

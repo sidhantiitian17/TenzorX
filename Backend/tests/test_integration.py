@@ -89,7 +89,7 @@ class IntegrationTest:
             }
         )
 
-        logger.info("✅ Integration test initialized with mock data")
+        logger.info("Integration test initialized with mock data")
 
     async def test_graphrag_module(self) -> ClinicalPathway:
         """Test GraphRAG clinical pathway discovery."""
@@ -103,11 +103,11 @@ class IntegrationTest:
             # Test with mock ICD code
             pathway = await graphrag.get_clinical_pathway("J00")  # Acute nasopharyngitis
 
-            logger.info(f"✅ GraphRAG returned pathway with {len(pathway.pathway)} nodes")
+            logger.info(f"GraphRAG returned pathway with {len(pathway.pathway)} nodes")
             return pathway
 
         except Exception as e:
-            logger.warning(f"⚠️ GraphRAG test failed (expected without Neo4j): {e}")
+            logger.warning(f"WARNING: GraphRAG test failed (expected without Neo4j): {e}")
             # Return mock pathway for integration testing
             return ClinicalPathway(
                 icd_code="J00",
@@ -131,11 +131,11 @@ class IntegrationTest:
 
             reputation_score = analyzer.analyze_reviews_batch(test_reviews)
 
-            logger.info(f"✅ ABSA returned reputation score: {reputation_score.overall_score:.2f}")
+            logger.info(f"ABSA returned reputation score: {reputation_score.overall_score:.2f}")
             return reputation_score
 
         except Exception as e:
-            logger.error(f"❌ ABSA test failed: {e}")
+            logger.error(f"ABSA test failed: {e}")
             raise
 
     def test_fusion_scorer_module(self) -> FusionScore:
@@ -152,16 +152,16 @@ class IntegrationTest:
                 cost_metrics=self.mock_cost_metrics
             )
 
-            logger.info(f"✅ Fusion Scorer returned score: {fusion_score.final_score:.2f}")
+            logger.info(f"Fusion Scorer returned score: {fusion_score.final_score:.2f}")
             return fusion_score
 
         except Exception as e:
-            logger.error(f"❌ Fusion Scorer test failed: {e}")
+            logger.error(f"Fusion Scorer test failed: {e}")
             raise
 
     def test_geo_pricing_module(self) -> Dict[str, Any]:
         """Test geospatial pricing."""
-        logger.info("🧪 Testing Geo Pricing Module...")
+        logger.info("Testing Geo Pricing Module...")
 
         try:
             pricing_service = GeoPricingService()
@@ -174,19 +174,19 @@ class IntegrationTest:
                 location_data=self.mock_location_data
             )
 
-            logger.info(f"✅ Geo Pricing returned adjusted cost: ₹{pricing_adjustment.adjusted_total_cost:,.0f}")
+            logger.info(f"Geo Pricing returned adjusted cost: ₹{pricing_adjustment.adjusted_total_cost:,.0f}")
             return {
                 'adjustment': pricing_adjustment,
                 'location_data': self.mock_location_data
             }
 
         except Exception as e:
-            logger.error(f"❌ Geo Pricing test failed: {e}")
+            logger.error(f"Geo Pricing test failed: {e}")
             raise
 
     def test_xai_evaluator_module(self) -> RAGConfidenceScore:
         """Test explainable AI evaluation."""
-        logger.info("🧪 Testing XAI Evaluator Module...")
+        logger.info("Testing XAI Evaluator Module...")
 
         try:
             xai_service = ExplainableAIService()
@@ -198,16 +198,16 @@ class IntegrationTest:
                 answer_relevancy_score=0.92
             )
 
-            logger.info(f"✅ XAI Evaluator returned confidence: {confidence_score.overall_confidence:.3f} ({confidence_score.confidence_tier})")
+            logger.info(f"XAI Evaluator returned confidence: {confidence_score.overall_confidence:.3f} ({confidence_score.confidence_tier})")
             return confidence_score
 
         except Exception as e:
-            logger.error(f"❌ XAI Evaluator test failed: {e}")
+            logger.error(f"XAI Evaluator test failed: {e}")
             raise
 
     async def run_full_integration_test(self) -> Dict[str, Any]:
         """Run complete integration test of all modules."""
-        logger.info("🚀 Starting Full Integration Test...")
+        logger.info("Starting Full Integration Test...")
 
         results = {}
 
@@ -250,13 +250,13 @@ class IntegrationTest:
 
             results['final_recommendation'] = final_recommendation
 
-            logger.info("✅ Full Integration Test Completed Successfully!")
-            logger.info(f"📊 Final Recommendation: Score {fusion_score.final_score:.1f}/100, Cost ₹{pricing['adjustment'].adjusted_total_cost:,.0f}, Confidence: {confidence.confidence_tier}")
+            logger.info("Full Integration Test Completed Successfully!")
+            logger.info(f"Final Recommendation: Score {fusion_score.final_score:.1f}/100, Cost ₹{pricing['adjustment'].adjusted_total_cost:,.0f}, Confidence: {confidence.confidence_tier}")
 
             return results
 
         except Exception as e:
-            logger.error(f"❌ Integration test failed: {e}")
+            logger.error(f"Integration test failed: {e}")
             raise
 
     def print_test_summary(self, results: Dict[str, Any]):
@@ -268,10 +268,10 @@ class IntegrationTest:
         for module, result in results.items():
             if module == 'final_recommendation':
                 continue
-            status = "✅ PASS" if not isinstance(result, Exception) else "❌ FAIL"
+            status = "PASS" if not isinstance(result, Exception) else "FAIL"
             print(f"{module.upper():<20} {status}")
 
-        print("\n📊 FINAL RECOMMENDATION:")
+        print("\nFINAL RECOMMENDATION:")
         if 'final_recommendation' in results:
             rec = results['final_recommendation']
             print(f"  • Fusion Score: {rec['fusion_score']:.1f}/100")
@@ -285,7 +285,7 @@ class IntegrationTest:
 
 def main():
     """Main test execution."""
-    print("🏥 Healthcare Navigator AI Modules Integration Test")
+    print("Healthcare Navigator AI Modules Integration Test")
     print("Testing 5 production-grade AI/ML modules...")
 
     test = IntegrationTest()
@@ -293,14 +293,13 @@ def main():
     try:
         results = asyncio.run(test.run_full_integration_test())
         test.print_test_summary(results)
-        print("\n🎉 All modules integrated successfully!")
+        print("\nAll modules integrated successfully!")
 
     except Exception as e:
-        logger.error(f"💥 Integration test failed: {e}")
-        print(f"\n💥 Integration test failed: {e}")
+        logger.error(f"ERROR: Integration test failed: {e}")
+        print(f"\nERROR: Integration test failed: {e}")
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()</content>
-<parameter name="filePath">d:\TenzorX\Backend\tests\test_integration.py
+    main()

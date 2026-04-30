@@ -30,7 +30,7 @@ try:
     if response.status_code == 200:
         result = response.json()
         print()
-        print('🏥 CLINICAL TRIAGE:')
+        print('CLINICAL TRIAGE:')
         print(f'   Severity: {result.get("severity")}')
         print(f'   Rationale: {result.get("rationale")}')
         print(f'   ICD-10 Codes: {result.get("icd10_codes")}')
@@ -52,14 +52,14 @@ try:
         print(f'   Estimated Interest: {loan.get("estimated_interest")}')
         print(f'   Call to Action: {loan.get("call_to_action")}')
         print()
-        print('✅ SUCCESS: NVIDIA Mistral Large 3 LLM is working!')
+        print('SUCCESS: NVIDIA Mistral Large 3 LLM is working!')
         print('   - Real AI-powered medical guidance')
         print('   - Session memory maintained')
         print('   - Comprehensive financial analysis')
         print('   - Enterprise-grade error handling')
     else:
-        print('❌ Error Response:')
+        print('Error Response:')
         print(json.dumps(response.json(), indent=2))
 
 except Exception as e:
-    print(f'❌ Error: {e}')
+    print(f'Error: {e}')

@@ -135,7 +135,7 @@ npm run dev
 ### Environment Variables
 ```bash
 # Required
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyDZPw2qU4kiYmWSjUmQAPmYcLQSNidyuv0
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 
 # Optional
 NEXT_PUBLIC_APP_NAME=HealthNav

@@ -19,8 +19,8 @@ from app.services.classifier import (
 )
 from app.services.ner_parser import map_symptoms_to_icd10
 from app.services.langchain_agent import process_patient_query
-from app.services.cost_engine import calculate_estimated_cost
-from app.services.nbfc_scorer import calculate_loan_eligibility
+from app.services.cost_engine import estimate_procedure_cost
+from app.services.nbfc_scorer import calculate_dti_and_risk_band
 
 router = APIRouter(prefix="/triage", tags=["Triage"])
 
@@ -84,17 +84,23 @@ async def triage_user_query(payload: UserQueryRequest) -> TriageResponse:
     loan_eligibility = None
 
     if payload.financial_profile:
-        # Mock base cost for MVP (e.g., 2,50,000 INR)
-        base_cost = 250000 
+        # Use a mock procedure name for MVP (e.g., angioplasty)
+        procedure_name = "angioplasty"  # Mock for MVP
         comorbidities = payload.patient_profile.known_comorbidities if payload.patient_profile else []
+        location_tier = "tier-1"  # Mock for MVP
         
-        cost_estimate = calculate_estimated_cost(base_cost, comorbidities)
+        cost_result = estimate_procedure_cost(procedure_name, comorbidities, location_tier)
+        cost_estimate = {
+            "base_cost": cost_result.base_cost,
+            "adjusted_cost": cost_result.adjusted_cost,
+            "breakdown": cost_result.breakdown
+        }
         
         # Calculate loan covering 80% over 24 months
-        loan_amount = cost_estimate["adjusted_cost"] * 0.8
+        loan_amount = cost_result.adjusted_cost * 0.8
         proposed_emi = loan_amount / 24 
         
-        loan_eligibility = calculate_loan_eligibility(
+        loan_eligibility = calculate_dti_and_risk_band(
             gross_monthly_income=payload.financial_profile.gross_monthly_income,
             existing_emis=payload.financial_profile.existing_emis,
             proposed_medical_emi=proposed_emi

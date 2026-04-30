@@ -30,6 +30,16 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     
     # ============================================================================
+    # NVIDIA API Configuration
+    # ============================================================================
+    NVIDIA_API_KEY: str = ""
+    """
+    NVIDIA API key for Mistral Large 3 LLM integration.
+    Required for AI-powered medical guidance.
+    Get from: https://integrate.api.nvidia.com/
+    """
+    
+    # ============================================================================
     # Neo4j Database Configuration
     # ============================================================================
     NEO4J_URI: str = "bolt://localhost:7687"

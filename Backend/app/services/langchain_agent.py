@@ -16,6 +16,7 @@ from typing import Any
 
 import requests
 
+from app.core.config import settings
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
@@ -27,7 +28,7 @@ MANDATORY_MEDICAL_DISCLAIMER = (
 
 NVIDIA_INVOKE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 NVIDIA_MODEL = "mistralai/mistral-large-3-675b-instruct-2512"
-NVIDIA_API_KEY = "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"
+NVIDIA_API_KEY = settings.NVIDIA_API_KEY
 
 store: dict[str, InMemoryChatMessageHistory] = {}
 

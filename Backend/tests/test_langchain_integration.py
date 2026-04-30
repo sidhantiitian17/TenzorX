@@ -24,8 +24,8 @@ from app.services.langchain_agent import (
     MANDATORY_MEDICAL_DISCLAIMER,
     NVIDIA_INVOKE_URL,
     NVIDIA_MODEL,
-    NVIDIA_API_KEY,
 )
+from app.core.config import settings
 
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class TestDirectNVIDIALLMIntegration:
 
         # Check headers
         headers = call_kwargs["headers"]
-        assert headers["Authorization"] == f"Bearer {NVIDIA_API_KEY}"
+        assert headers["Authorization"] == f"Bearer {settings.NVIDIA_API_KEY}"
         assert headers["Accept"] == "application/json"
         assert headers["Content-Type"] == "application/json"
 
@@ -256,7 +256,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_timeout_error_handling(self, mock_runnable_history):
         """Test that timeout errors are caught and re-raised gracefully."""
-        os.environ[NVIDIA_API_KEY_ENV] = "test-api-key"
+        os.environ["NVIDIA_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_runnable_history_instance = MagicMock()
@@ -278,7 +278,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_connection_error_handling(self, mock_runnable_history):
         """Test that connection errors are caught and re-raised gracefully."""
-        os.environ[NVIDIA_API_KEY_ENV] = "test-api-key"
+        os.environ["NVIDIA_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_runnable_history_instance = MagicMock()
@@ -302,7 +302,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_auth_error_handling(self, mock_runnable_history):
         """Test that 401 auth errors are identified and reported clearly."""
-        os.environ[NVIDIA_API_KEY_ENV] = "test-api-key"
+        os.environ["NVIDIA_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_runnable_history_instance = MagicMock()
@@ -350,7 +350,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_empty_response_error_handling(self, mock_runnable_history):
         """Test that empty LLM responses are caught."""
-        os.environ[NVIDIA_API_KEY_ENV] = "test-api-key"
+        os.environ["NVIDIA_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_response = MagicMock()
@@ -375,7 +375,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_llm_call_logging(self, mock_runnable_history, mock_logger):
         """Test that LLM calls and responses are logged."""
-        os.environ[NVIDIA_API_KEY_ENV] = "test-api-key"
+        os.environ["NVIDIA_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_response = MagicMock()

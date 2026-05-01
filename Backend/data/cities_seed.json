@@ -1,0 +1,154 @@
+[
+  {
+    "city_id": "CITY_MUM",
+    "name": "Mumbai",
+    "state": "Maharashtra",
+    "latitude": 19.0760,
+    "longitude": 72.8777,
+    "tier": "TIER_1"
+  },
+  {
+    "city_id": "CITY_DEL",
+    "name": "Delhi",
+    "state": "Delhi",
+    "latitude": 28.7041,
+    "longitude": 77.1025,
+    "tier": "TIER_1"
+  },
+  {
+    "city_id": "CITY_BLR",
+    "name": "Bangalore",
+    "state": "Karnataka",
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "tier": "TIER_1"
+  },
+  {
+    "city_id": "CITY_HYD",
+    "name": "Hyderabad",
+    "state": "Telangana",
+    "latitude": 17.3850,
+    "longitude": 78.4867,
+    "tier": "TIER_1"
+  },
+  {
+    "city_id": "CITY_CHN",
+    "name": "Chennai",
+    "state": "Tamil Nadu",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "tier": "TIER_1"
+  },
+  {
+    "city_id": "CITY_PUN",
+    "name": "Pune",
+    "state": "Maharashtra",
+    "latitude": 18.5204,
+    "longitude": 73.8567,
+    "tier": "TIER_1"
+  },
+  {
+    "city_id": "CITY_NGP",
+    "name": "Nagpur",
+    "state": "Maharashtra",
+    "latitude": 21.1458,
+    "longitude": 79.0882,
+    "tier": "TIER_2"
+  },
+  {
+    "city_id": "CITY_IND",
+    "name": "Indore",
+    "state": "Madhya Pradesh",
+    "latitude": 22.7196,
+    "longitude": 75.8577,
+    "tier": "TIER_2"
+  },
+  {
+    "city_id": "CITY_LKO",
+    "name": "Lucknow",
+    "state": "Uttar Pradesh",
+    "latitude": 26.8467,
+    "longitude": 80.9462,
+    "tier": "TIER_2"
+  },
+  {
+    "city_id": "CITY_BHP",
+    "name": "Bhopal",
+    "state": "Madhya Pradesh",
+    "latitude": 23.2599,
+    "longitude": 77.4126,
+    "tier": "TIER_2"
+  },
+  {
+    "city_id": "CITY_JPR",
+    "name": "Jaipur",
+    "state": "Rajasthan",
+    "latitude": 26.9124,
+    "longitude": 75.7873,
+    "tier": "TIER_2"
+  },
+  {
+    "city_id": "CITY_SUR",
+    "name": "Surat",
+    "state": "Gujarat",
+    "latitude": 21.1702,
+    "longitude": 72.8311,
+    "tier": "TIER_2"
+  },
+  {
+    "city_id": "CITY_RAI",
+    "name": "Raipur",
+    "state": "Chhattisgarh",
+    "latitude": 21.2514,
+    "longitude": 81.6296,
+    "tier": "TIER_3"
+  },
+  {
+    "city_id": "CITY_DRG",
+    "name": "Durg",
+    "state": "Chhattisgarh",
+    "latitude": 21.1904,
+    "longitude": 81.2849,
+    "tier": "TIER_3"
+  },
+  {
+    "city_id": "CITY_BLS",
+    "name": "Bilaspur",
+    "state": "Chhattisgarh",
+    "latitude": 22.0797,
+    "longitude": 82.1409,
+    "tier": "TIER_3"
+  },
+  {
+    "city_id": "CITY_KRB",
+    "name": "Korba",
+    "state": "Chhattisgarh",
+    "latitude": 22.3595,
+    "longitude": 82.7501,
+    "tier": "TIER_3"
+  },
+  {
+    "city_id": "CITY_AMB",
+    "name": "Ambikapur",
+    "state": "Chhattisgarh",
+    "latitude": 23.1355,
+    "longitude": 83.1818,
+    "tier": "TIER_3"
+  },
+  {
+    "city_id": "CITY_NSH",
+    "name": "Nashik",
+    "state": "Maharashtra",
+    "latitude": 19.9975,
+    "longitude": 73.7898,
+    "tier": "TIER_3"
+  },
+  {
+    "city_id": "CITY_RNC",
+    "name": "Ranchi",
+    "state": "Jharkhand",
+    "latitude": 23.3441,
+    "longitude": 85.3096,
+    "tier": "TIER_3"
+  }
+]

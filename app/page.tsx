@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useAppDispatch, useAppState, useCompare } from '@/lib/context';
 import { buildCostEstimate, buildLenderRiskProfile, generateMockSearchData } from '@/lib/mockData';
 import {
   callTriageAPI,
+  callChatAPI,
+  getSessionAPI,
   searchHospitalsAPI,
   transformTriageToSearchData,
   APIError,
@@ -43,6 +45,7 @@ export default function HomePage() {
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
   const [showEmergency, setShowEmergency] = useState(false);
   const [resultsExpanded, setResultsExpanded] = useState(false);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
   const selectedHospitals = useMemo(
     () => state.searchResults.filter((h: { id: string }) => selectedIds.includes(h.id)),
@@ -53,6 +56,21 @@ export default function HomePage() {
     () => applyHospitalFiltersAndSort(state.searchResults, state.sortMode, state.filters),
     [state.filters, state.searchResults, state.sortMode]
   );
+
+  // Load session data on mount (for saved results, appointments, etc.)
+  useEffect(() => {
+    async function loadSession() {
+      try {
+        const sessionData = await getSessionAPI(sessionId);
+        // Could restore saved results, appointments, etc. from session
+        console.log('Session loaded:', sessionData.session_id);
+      } catch (e) {
+        // Session might not exist yet, which is fine
+        console.log('No existing session found, starting fresh');
+      }
+    }
+    loadSession();
+  }, [sessionId]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -76,60 +94,115 @@ export default function HomePage() {
       const location = extractLocation(query, state.patientProfile?.location || 'Nagpur');
 
       try {
-        // Try to call the backend API first
-        const triageResponse = await callTriageAPI(
+        // Try the new Master Orchestrator API first
+        const chatResponse = await callChatAPI(
           query,
+          sessionId,
+          location,
           state.patientProfile
             ? {
                 age: state.patientProfile.age ?? undefined,
-                location: state.patientProfile.location,
-                known_comorbidities: state.patientProfile.comorbidities,
+                comorbidities: state.patientProfile.comorbidities,
+                budget_inr: state.patientProfile.budget_min || state.patientProfile.budget_max || undefined,
+                insurance: state.patientProfile.insurance_type ? true : false,
               }
-            : undefined,
-          undefined
+            : undefined
         );
 
-        // Search for hospitals from backend
-        let hospitals: Hospital[] = [];
-        try {
-          hospitals = await searchHospitalsAPI({
-            location,
-            limit: 3,
-            min_rating: 3,
-          });
-        } catch {
-          // If hospital search fails, we'll continue with empty hospitals
-          hospitals = [];
+        // Build response from Master Orchestrator output
+        let response = chatResponse.chat_response.message;
+        const triage = chatResponse.chat_response.triage;
+        
+        if (isEmergency || triage === 'RED') {
+          response = '**🚨 Emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
         }
 
-        // Transform backend response to frontend format
-        const searchData = transformTriageToSearchData(triageResponse, hospitals, query, location);
+        // Transform hospitals from MasterResponse to frontend format
+        const hospitals = chatResponse.hospitals || [];
+        const hospitalCount = hospitals.length;
 
-        if (state.patientProfile?.comorbidities.length) {
-          searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
-            (condition: string) =>
-              `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
-          );
-        }
+        // Build search data from response
+        const searchData: import('@/types').SearchData = {
+          procedure: chatResponse.clinical_interpretation?.canonical_procedure || query,
+          icd10_code: chatResponse.clinical_interpretation?.icd10 || '',
+          icd10_label: chatResponse.clinical_interpretation?.category || '',
+          snomed_code: chatResponse.clinical_interpretation?.snomed_ct || '',
+          category: chatResponse.clinical_interpretation?.category || 'General Medicine',
+          query_location: location,
+          cost_range: chatResponse.cost_estimate?.total || { min: 50000, max: 200000 },
+          confidence: (chatResponse.chat_response.confidence_score || 75) / 100,
+          cost_breakdown: chatResponse.cost_estimate?.components 
+            ? {
+                procedure: chatResponse.cost_estimate.components['procedure'] || { min: 0, max: 0 },
+                doctor_fees: chatResponse.cost_estimate.components['doctor_fees'] || { min: 0, max: 0 },
+                hospital_stay: chatResponse.cost_estimate.components['hospital_stay'] || { min: 0, max: 0, nights: '1-2' },
+                diagnostics: chatResponse.cost_estimate.components['diagnostics'] || { min: 0, max: 0 },
+                medicines: chatResponse.cost_estimate.components['medicines'] || { min: 0, max: 0 },
+                contingency: chatResponse.cost_estimate.components['contingency'] || { min: 0, max: 0 },
+              }
+            : {
+                procedure: { min: 0, max: 0 },
+                doctor_fees: { min: 0, max: 0 },
+                hospital_stay: { min: 0, max: 0, nights: '1-2' },
+                diagnostics: { min: 0, max: 0 },
+                medicines: { min: 0, max: 0 },
+                contingency: { min: 0, max: 0 },
+              },
+          comorbidity_warnings: chatResponse.treatment_pathway?.comorbidity_note 
+            ? [chatResponse.treatment_pathway.comorbidity_note] 
+            : [],
+          hospitals: hospitals.slice(0, 3),
+          clinical_mapping: {
+            user_query: query,
+            procedure: chatResponse.clinical_interpretation?.canonical_procedure || query,
+            icd10_code: chatResponse.clinical_interpretation?.icd10 || '',
+            icd10_label: chatResponse.clinical_interpretation?.category || '',
+            snomed_code: chatResponse.clinical_interpretation?.snomed_ct || '',
+            category: chatResponse.clinical_interpretation?.category || 'General Medicine',
+            pathway: (chatResponse.treatment_pathway?.phases || []).map((p, i) => ({
+              step: i + 1,
+              name: p.phase,
+              duration: '1-3 days',
+              cost_range: p.cost_range,
+              description: p.description,
+            })),
+            confidence: (chatResponse.chat_response.confidence_score || 75) / 100,
+            confidence_factors: (chatResponse.xai_explanation?.shap_waterfall.features || []).map(f => ({
+              key: 'data_availability' as const,
+              label: f.name,
+              score: Math.round(f.contribution * 100),
+              weight: f.value,
+              note: `Contribution: ${f.contribution.toFixed(2)}`,
+            })),
+          },
+          pathway: (chatResponse.treatment_pathway?.phases || []).map((p, i) => ({
+            step: i + 1,
+            name: p.phase,
+            duration: '1-3 days',
+            cost_range: p.cost_range,
+            description: p.description,
+          })),
+          confidence_factors: [],
+          geo_adjustment: {
+            city_tier: 'tier2',
+            city_name: location,
+            discount_vs_metro: 0.32,
+          },
+          tier_comparison: {
+            budget: { min: 0, max: 0 },
+            mid: chatResponse.cost_estimate?.total || { min: 50000, max: 200000 },
+            premium: { min: 0, max: 0 },
+          },
+          risk_adjustments: [],
+          data_sources: [
+            'NVIDIA Mistral LLM Analysis',
+            'ICD-10 Medical Classification',
+            'Healthcare Cost Database',
+          ],
+        };
 
         const estimate = buildCostEstimate(searchData);
         const lenderRisk = buildLenderRiskProfile(estimate);
-        const hospitalCount = searchData.hospitals.length;
-        const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
-
-        // Use the LLM-generated response from the backend
-        let response = triageResponse.agent_response;
-
-        // If backend response is too short, enhance it with hospital info
-        if (response.length < 100 && hospitalCount > 0) {
-          response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.\n\n`;
-          response += `Estimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.\n\n`;
-          response += triageResponse.agent_response;
-        }
-
-        if (isEmergency) {
-          response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
-        }
 
         const aiMessage: Message = {
           id: `assistant-${Date.now()}`,
@@ -147,55 +220,123 @@ export default function HomePage() {
         dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
         dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
       } catch (error) {
-        // Backend is down or returned an error - fallback to mock data
-        console.warn('Backend unavailable, falling back to mock data:', error);
-
-        await new Promise((resolve) => setTimeout(resolve, 900));
-
-        const searchData = generateMockSearchData(query, location);
-
-        if (state.patientProfile?.comorbidities.length) {
-          searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
-            (condition: string) =>
-              `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
+        console.warn('Master Orchestrator API failed, falling back to legacy API:', error);
+        
+        // Fallback to legacy triage API
+        try {
+          const triageResponse = await callTriageAPI(
+            query,
+            state.patientProfile
+              ? {
+                  age: state.patientProfile.age ?? undefined,
+                  location: state.patientProfile.location,
+                  known_comorbidities: state.patientProfile.comorbidities,
+                }
+              : undefined,
+            undefined
           );
+
+          let hospitals: Hospital[] = [];
+          try {
+            hospitals = await searchHospitalsAPI({
+              location,
+              limit: 3,
+              min_rating: 3,
+            });
+          } catch {
+            hospitals = [];
+          }
+
+          const searchData = transformTriageToSearchData(triageResponse, hospitals, query, location);
+
+          if (state.patientProfile?.comorbidities.length) {
+            searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
+              (condition: string) =>
+                `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
+            );
+          }
+
+          const estimate = buildCostEstimate(searchData);
+          const lenderRisk = buildLenderRiskProfile(estimate);
+          const hospitalCount = searchData.hospitals.length;
+          const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
+
+          let response = triageResponse.agent_response;
+          if (response.length < 100 && hospitalCount > 0) {
+            response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.\n\n`;
+            response += `Estimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.\n\n`;
+            response += triageResponse.agent_response;
+          }
+
+          if (isEmergency) {
+            response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
+          }
+
+          const aiMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: response,
+            timestamp: new Date(),
+            searchData,
+          };
+
+          dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+          dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
+          dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
+          dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
+          dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
+          dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
+          dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
+        } catch (fallbackError) {
+          // Both APIs failed - use mock data
+          console.warn('Both APIs failed, using mock data:', fallbackError);
+          await new Promise((resolve) => setTimeout(resolve, 900));
+
+          const searchData = generateMockSearchData(query, location);
+
+          if (state.patientProfile?.comorbidities.length) {
+            searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
+              (condition: string) =>
+                `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
+            );
+          }
+
+          const estimate = buildCostEstimate(searchData);
+          const lenderRisk = buildLenderRiskProfile(estimate);
+          const hospitalCount = searchData.hospitals.length;
+          const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
+
+          let response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.`;
+          response += `\n\nEstimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.`;
+
+          if (isEmergency) {
+            response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
+          }
+
+          response += '\n\n*(Using offline data - backend LLM service unavailable)*';
+          response += '\n\nDecision support only. Please consult a qualified doctor before making medical decisions.';
+
+          const aiMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: response,
+            timestamp: new Date(),
+            searchData,
+          };
+
+          dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+          dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
+          dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
+          dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
+          dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
+          dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
+          dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
         }
-
-        const estimate = buildCostEstimate(searchData);
-        const lenderRisk = buildLenderRiskProfile(estimate);
-        const hospitalCount = searchData.hospitals.length;
-        const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
-
-        let response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.`;
-        response += `\n\nEstimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.`;
-
-        if (isEmergency) {
-          response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
-        }
-
-        response += '\n\n*(Using offline data - backend LLM service unavailable)*';
-        response += '\n\nDecision support only. Please consult a qualified doctor before making medical decisions.';
-
-        const aiMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: response,
-          timestamp: new Date(),
-          searchData,
-        };
-
-        dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
-        dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
-        dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
-        dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
-        dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
-        dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
-        dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     },
-    [dispatch, state.patientProfile?.comorbidities, state.patientProfile?.location]
+    [dispatch, sessionId, state.patientProfile]
   );
 
   return (

@@ -1,0 +1,102 @@
+[
+  {
+    "id": "spec_001",
+    "name": "Dr. Rajesh Sharma",
+    "department": "Cardiology",
+    "qualification": "DM Cardiology, MD Medicine",
+    "experience_years": 18,
+    "hospital_id": "hosp_nagpur_001",
+    "specializations": ["I25.10", "I50", "I48"],
+    "active": true
+  },
+  {
+    "id": "spec_002",
+    "name": "Dr. Priya Patel",
+    "department": "Orthopedics",
+    "qualification": "MS Orthopedics",
+    "experience_years": 12,
+    "hospital_id": "hosp_nagpur_001",
+    "specializations": ["M17.11", "M16.1", "M54.5"],
+    "active": true
+  },
+  {
+    "id": "spec_003",
+    "name": "Dr. Amit Kumar",
+    "department": "Cardiology",
+    "qualification": "DM Cardiology",
+    "experience_years": 15,
+    "hospital_id": "hosp_raipur_001",
+    "specializations": ["I25.10", "I50", "I48"],
+    "active": true
+  },
+  {
+    "id": "spec_004",
+    "name": "Dr. Sunita Verma",
+    "department": "Nephrology",
+    "qualification": "DM Nephrology",
+    "experience_years": 14,
+    "hospital_id": "hosp_raipur_002",
+    "specializations": ["N18", "Z99.2"],
+    "active": true
+  },
+  {
+    "id": "spec_005",
+    "name": "Dr. Vikram Singh",
+    "department": "Orthopedics",
+    "qualification": "MS Orthopedics, MCh",
+    "experience_years": 20,
+    "hospital_id": "hosp_bhopal_001",
+    "specializations": ["M17.11", "M16.1"],
+    "active": true
+  },
+  {
+    "id": "spec_006",
+    "name": "Dr. Neha Gupta",
+    "department": "Cardiology",
+    "qualification": "DM Cardiology",
+    "experience_years": 10,
+    "hospital_id": "hosp_indore_001",
+    "specializations": ["I25.10", "I50"],
+    "active": true
+  },
+  {
+    "id": "spec_007",
+    "name": "Dr. Suresh Joshi",
+    "department": "Cardiac Surgery",
+    "qualification": "MCh Cardiothoracic Surgery",
+    "experience_years": 22,
+    "hospital_id": "hosp_surat_001",
+    "specializations": ["I25.10", "Z95.1"],
+    "active": true
+  },
+  {
+    "id": "spec_008",
+    "name": "Dr. Ananya Mishra",
+    "department": "Neurosurgery",
+    "qualification": "MCh Neurosurgery",
+    "experience_years": 16,
+    "hospital_id": "hosp_patna_001",
+    "specializations": ["G93.2", "I60"],
+    "active": true
+  },
+  {
+    "id": "spec_009",
+    "name": "Dr. Ramesh Iyer",
+    "department": "Ophthalmology",
+    "qualification": "MS Ophthalmology",
+    "experience_years": 13,
+    "hospital_id": "hosp_nagpur_002",
+    "specializations": ["H25.9", "H40"],
+    "active": true
+  },
+  {
+    "id": "spec_010",
+    "name": "Dr. Kavita Reddy",
+    "department": "General Surgery",
+    "qualification": "MS General Surgery",
+    "experience_years": 11,
+    "hospital_id": "hosp_raipur_001",
+    "specializations": ["K35", "K80"],
+    "active": true
+  }
+]

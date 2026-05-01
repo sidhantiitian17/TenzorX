@@ -1,0 +1,50 @@
+[
+  {
+    "band_id": "BAND_LOW",
+    "dti_min": 0.0,
+    "dti_max": 30.0,
+    "risk_flag": "LOW",
+    "underwriting_label": "Strong repayment capacity; very high approval likelihood",
+    "interest_rate_min": 12.0,
+    "interest_rate_max": 13.0,
+    "approval_likelihood": "VERY HIGH",
+    "cta_text": "Aap eligible hain — Apply Now",
+    "loan_coverage_pct": 0.80
+  },
+  {
+    "band_id": "BAND_MEDIUM",
+    "dti_min": 30.0,
+    "dti_max": 40.0,
+    "risk_flag": "MEDIUM",
+    "underwriting_label": "Manageable debt load; conditional approval likely",
+    "interest_rate_min": 13.0,
+    "interest_rate_max": 15.0,
+    "approval_likelihood": "LIKELY",
+    "cta_text": "Proceed with Standard Application",
+    "loan_coverage_pct": 0.80
+  },
+  {
+    "band_id": "BAND_HIGH",
+    "dti_min": 40.0,
+    "dti_max": 50.0,
+    "risk_flag": "HIGH",
+    "underwriting_label": "Strained capacity; requires manual review or co-applicant",
+    "interest_rate_min": 15.0,
+    "interest_rate_max": 16.0,
+    "approval_likelihood": "MANUAL REVIEW",
+    "cta_text": "Flag for Manual Review",
+    "loan_coverage_pct": 0.70
+  },
+  {
+    "band_id": "BAND_CRITICAL",
+    "dti_min": 50.0,
+    "dti_max": 100.0,
+    "risk_flag": "CRITICAL",
+    "underwriting_label": "Overleveraged; loan approval unlikely without restructuring",
+    "interest_rate_min": -1.0,
+    "interest_rate_max": -1.0,
+    "approval_likelihood": "UNLIKELY",
+    "cta_text": "Recommend Alternate Financing",
+    "loan_coverage_pct": 0.0
+  }
+]

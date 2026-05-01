@@ -316,3 +316,600 @@ export function transformTriageToSearchData(
     ],
   };
 }
+
+// ============================================================================
+// NEW API FUNCTIONS - Per instructionagent.md Section 6
+// ============================================================================
+
+/**
+ * Master Orchestrator Chat API - POST /api/chat
+ * Per instructionagent.md Section 6.1
+ */
+export async function callChatAPI(
+  message: string,
+  sessionId: string,
+  location?: string,
+  patientProfile?: {
+    age?: number;
+    comorbidities?: string[];
+    budget_inr?: number;
+    insurance?: boolean;
+  }
+): Promise<{
+  session_id: string;
+  chat_response: {
+    message: string;
+    triage: 'RED' | 'YELLOW' | 'GREEN';
+    confidence_score: number;
+    disclaimer: string;
+  };
+  clinical_interpretation?: {
+    canonical_procedure: string;
+    category: string;
+    icd10: string;
+    snomed_ct: string;
+    mapping_confidence: number;
+  };
+  treatment_pathway?: {
+    phases: Array<{
+      phase: string;
+      description: string;
+      cost_range: { min: number; max: number };
+    }>;
+    total_estimated_cost: { min: number; max: number };
+    comorbidity_note?: string;
+  };
+  cost_estimate?: {
+    total: { min: number; max: number };
+    components: Record<string, { min: number; max: number }>;
+  };
+  hospitals?: Hospital[];
+  map_data?: {
+    hospital_markers: Array<{
+      id: string;
+      lat: number;
+      lng: number;
+      name: string;
+      tier: string;
+      color: string;
+    }>;
+    map_config: {
+      center: { lat: number; lng: number };
+      zoom: number;
+      legend: string;
+    };
+  };
+  financial_assistance?: {
+    dti_ratio: number;
+    risk_flag: string;
+    emi_options: { '12_months': number; '24_months': number; '36_months': number };
+    government_schemes: Array<{ name: string; eligibility: string; coverage_pct: string }>;
+    lending_partners: Array<{ name: string; rate_range: string; max_tenure: number }>;
+    call_to_action: string;
+  };
+  appointment_checklist?: {
+    availability_proxy: { wait_time_display: string };
+    documents: Array<{ name: string; required: boolean; description: string }>;
+    questions: string[];
+    forms: Array<{ form_id: string; name: string; download_url: string }>;
+  };
+  xai_explanation?: {
+    shap_waterfall: {
+      final_score: number;
+      features: Array<{ name: string; value: number; contribution: number }>;
+    };
+    lime_highlights?: {
+      highlighted_tokens: Array<{ text: string; weight: number }>;
+    };
+    confidence_score: number;
+    confidence_verdict: string;
+  };
+}> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: message.trim(),
+        session_id: sessionId,
+        location,
+        patient_profile: patientProfile,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `Chat API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to call chat API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Get Session State - GET /api/session/{session_id}
+ * Per instructionagent.md Section 6.2
+ */
+export async function getSessionAPI(sessionId: string): Promise<{
+  session_id: string;
+  user_location?: {
+    city: string;
+    state?: string;
+    lat?: number;
+    lng?: number;
+  };
+  patient_profile?: {
+    age?: number;
+    comorbidities: string[];
+    budget_inr?: number;
+    insurance: boolean;
+  };
+  conversation_history: Array<{ role: string; content: string; timestamp?: string }>;
+  last_procedure?: string;
+  last_results?: Record<string, unknown>;
+  saved_results: Array<Record<string, unknown>>;
+  appointment_requests: Array<{
+    appointment_id: string;
+    hospital_name: string;
+    procedure: string;
+    status: 'requested' | 'confirmed' | 'cancelled';
+    timestamp: string;
+  }>;
+}> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/session/${encodeURIComponent(sessionId)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `Session API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to get session: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Update Appointment Status - PATCH /api/session/{session_id}/appointment
+ * Per instructionagent.md Section 6.3
+ */
+export async function updateAppointmentAPI(
+  sessionId: string,
+  appointmentId: string,
+  status: 'requested' | 'confirmed' | 'cancelled'
+): Promise<{
+  success: boolean;
+  appointment: {
+    appointment_id: string;
+    hospital_name: string;
+    procedure: string;
+    status: string;
+    timestamp: string;
+  };
+}> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/session/${encodeURIComponent(sessionId)}/appointment`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        appointment_id: appointmentId,
+        status,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `Appointment update API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to update appointment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Calculate EMI - POST /api/emi-calculate
+ * Per instructionagent.md Section 6.4
+ */
+export async function calculateEMIAPI(
+  principal: number,
+  annualRatePct: number,
+  tenureMonths: number
+): Promise<{
+  monthly_emi: number;
+  total_repayment: number;
+}> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // Shorter timeout for EMI
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/emi-calculate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        principal,
+        annual_rate_pct: annualRatePct,
+        tenure_months: tenureMonths,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `EMI API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to calculate EMI: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Submit Feedback - POST /api/feedback
+ * Per instructionagent.md Section 6.5
+ */
+export async function submitFeedbackAPI(
+  sessionId: string,
+  originalQuery: string,
+  mappedProcedure: string,
+  userCorrection: string
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        original_query: originalQuery,
+        mapped_procedure: mappedProcedure,
+        user_correction: userCorrection,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `Feedback API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to submit feedback: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Save Result - POST /api/save-result
+ * Per instructionagent.md Section 6.6
+ */
+export async function saveResultAPI(
+  sessionId: string,
+  resultData: Record<string, unknown>
+): Promise<{
+  success: boolean;
+  saved_count: number;
+}> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/save-result`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        result_data: resultData,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `Save result API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to save result: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Get Form Template - GET /api/form-template/{form_name}
+ * Per instructionagent.md Section 6.7
+ */
+export async function getFormTemplateAPI(formName: string): Promise<Blob> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/form-template/${encodeURIComponent(formName)}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'text/plain,application/pdf',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `Form template API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.blob();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to get form template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Lender Underwrite - POST /api/lender/underwrite
+ * Per instructionagent.md Section 7
+ */
+export async function lenderUnderwriteAPI(request: {
+  procedure: string;
+  city: string;
+  patient_income_monthly: number;
+  existing_emis: number;
+  loan_amount_requested: number;
+  tenure_months: number;
+}): Promise<{
+  procedure: string;
+  city: string;
+  dti_assessment: {
+    risk_level: string;
+    rate_range: string;
+    cta: string;
+    dti_percentage: number;
+  };
+  tier_distribution: Array<{
+    tier: string;
+    hospital_count: number;
+    avg_cost_min: number;
+    avg_cost_max: number;
+  }>;
+  shap_attribution: {
+    features: Array<{ feature: string; importance: number; impact: string }>;
+    base_risk_score: number;
+    final_risk_score: number;
+    explanation: string;
+  };
+  recommendation: string;
+}> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/lender/underwrite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new APIError(
+        `Lender underwrite API returned ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
+    }
+
+    throw new APIError(`Failed to get lender underwrite: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Create WebSocket Connection for Streaming Chat
+ * Per instructionagent.md Section 12 - WebSocket
+ */
+export function createChatWebSocket(
+  sessionId: string,
+  onMessage: (data: { type: string; content?: string; full_response?: string }) => void,
+  onError?: (error: Event) => void,
+  onClose?: () => void
+): WebSocket {
+  // Determine WebSocket URL based on API_BASE_URL
+  const wsProtocol = API_BASE_URL.startsWith('https') ? 'wss' : 'ws';
+  const wsHost = API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/api\/v1$/, '');
+  const wsUrl = `${wsProtocol}://${wsHost}/ws/chat/${encodeURIComponent(sessionId)}`;
+
+  const ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    console.log('WebSocket connected for session:', sessionId);
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      onMessage(data);
+    } catch (e) {
+      console.error('Failed to parse WebSocket message:', e);
+    }
+  };
+
+  ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+    onError?.(error);
+  };
+
+  ws.onclose = () => {
+    console.log('WebSocket disconnected for session:', sessionId);
+    onClose?.();
+  };
+
+  return ws;
+}
+
+/**
+ * Send chat message via WebSocket
+ */
+export function sendChatMessageViaWebSocket(
+  ws: WebSocket,
+  message: string,
+  location?: string,
+  patientProfile?: Record<string, unknown>
+): void {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'message',
+      content: message,
+      location,
+      patient_profile: patientProfile,
+    }));
+  } else {
+    console.error('WebSocket is not open. Ready state:', ws.readyState);
+  }
+}

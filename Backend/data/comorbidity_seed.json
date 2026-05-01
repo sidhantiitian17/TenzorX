@@ -1,0 +1,74 @@
+[
+  {
+    "condition_name": "ASCVD",
+    "full_name": "Atherosclerotic Cardiovascular Disease",
+    "icd10_code": "I25",
+    "cost_multiplier_weight": 0.55,
+    "multiplier_vs_baseline": 2.2,
+    "risk_category": "ASCVD",
+    "description": "Buildup of cholesterol plaque in arteries, increasing surgical risk"
+  },
+  {
+    "condition_name": "Heart Failure",
+    "full_name": "Congestive Heart Failure",
+    "icd10_code": "I50",
+    "cost_multiplier_weight": 0.825,
+    "multiplier_vs_baseline": 3.3,
+    "risk_category": "HF",
+    "description": "Heart unable to pump sufficient blood, significantly elevates procedure costs"
+  },
+  {
+    "condition_name": "Chronic Kidney Disease",
+    "full_name": "Chronic Kidney Disease",
+    "icd10_code": "N18",
+    "cost_multiplier_weight": 0.675,
+    "multiplier_vs_baseline": 2.7,
+    "risk_category": "CKD",
+    "description": "Progressive loss of kidney function affecting drug metabolism"
+  },
+  {
+    "condition_name": "Diabetes Mellitus Type 2",
+    "full_name": "Diabetes Mellitus Type 2",
+    "icd10_code": "E11",
+    "cost_multiplier_weight": 0.40,
+    "multiplier_vs_baseline": 1.4,
+    "risk_category": "Diabetes",
+    "description": "Elevated surgical risk due to impaired wound healing and infection risk"
+  },
+  {
+    "condition_name": "Hypertension",
+    "full_name": "Essential Hypertension",
+    "icd10_code": "I10",
+    "cost_multiplier_weight": 0.25,
+    "multiplier_vs_baseline": 1.25,
+    "risk_category": "Other",
+    "description": "Chronic high blood pressure requiring careful anesthesia management"
+  },
+  {
+    "condition_name": "COPD",
+    "full_name": "Chronic Obstructive Pulmonary Disease",
+    "icd10_code": "J44",
+    "cost_multiplier_weight": 0.35,
+    "multiplier_vs_baseline": 1.35,
+    "risk_category": "Other",
+    "description": "Respiratory condition complicating post-operative recovery"
+  },
+  {
+    "condition_name": "Obesity",
+    "full_name": "Obesity",
+    "icd10_code": "E66",
+    "cost_multiplier_weight": 0.15,
+    "multiplier_vs_baseline": 1.15,
+    "risk_category": "Other",
+    "description": "Increased surgical complexity and anesthesia requirements"
+  },
+  {
+    "condition_name": "Atrial Fibrillation",
+    "full_name": "Atrial Fibrillation",
+    "icd10_code": "I48",
+    "cost_multiplier_weight": 0.45,
+    "multiplier_vs_baseline": 1.45,
+    "risk_category": "Other",
+    "description": "Irregular heartbeat requiring cardiac monitoring"
+  }
+]

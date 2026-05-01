@@ -1,0 +1,98 @@
+[
+  {
+    "hospital_id": "hosp_nagpur_001",
+    "insurer_name": "Star Health",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.85,
+    "cashless_success_rate": 0.92,
+    "coverage_tiers": ["Silver", "Gold", "Platinum"]
+  },
+  {
+    "hospital_id": "hosp_nagpur_001",
+    "insurer_name": "ICICI Lombard",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.82,
+    "cashless_success_rate": 0.88,
+    "coverage_tiers": ["Standard", "Premium"]
+  },
+  {
+    "hospital_id": "hosp_nagpur_002",
+    "insurer_name": "Star Health",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.78,
+    "cashless_success_rate": 0.85,
+    "coverage_tiers": ["Silver", "Gold"]
+  },
+  {
+    "hospital_id": "hosp_raipur_001",
+    "insurer_name": "Apollo Munich",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.88,
+    "cashless_success_rate": 0.95,
+    "coverage_tiers": ["Optima", "Optima Plus"]
+  },
+  {
+    "hospital_id": "hosp_raipur_001",
+    "insurer_name": "Max Bupa",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.86,
+    "cashless_success_rate": 0.93,
+    "coverage_tiers": ["Health Companion", "Health Recharge"]
+  },
+  {
+    "hospital_id": "hosp_raipur_002",
+    "insurer_name": "Star Health",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.84,
+    "cashless_success_rate": 0.90,
+    "coverage_tiers": ["Silver", "Gold"]
+  },
+  {
+    "hospital_id": "hosp_bhopal_001",
+    "insurer_name": "New India Assurance",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.80,
+    "cashless_success_rate": 0.87,
+    "coverage_tiers": ["Standard"]
+  },
+  {
+    "hospital_id": "hosp_indore_001",
+    "insurer_name": "Star Health",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.87,
+    "cashless_success_rate": 0.94,
+    "coverage_tiers": ["Silver", "Gold", "Platinum"]
+  },
+  {
+    "hospital_id": "hosp_indore_001",
+    "insurer_name": "ICICI Lombard",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.84,
+    "cashless_success_rate": 0.91,
+    "coverage_tiers": ["Standard", "Premium"]
+  },
+  {
+    "hospital_id": "hosp_surat_001",
+    "insurer_name": "Apollo Munich",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.89,
+    "cashless_success_rate": 0.96,
+    "coverage_tiers": ["Optima", "Optima Plus"]
+  },
+  {
+    "hospital_id": "hosp_patna_001",
+    "insurer_name": "Star Health",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.81,
+    "cashless_success_rate": 0.88,
+    "coverage_tiers": ["Silver", "Gold"]
+  },
+  {
+    "hospital_id": "hosp_patna_001",
+    "insurer_name": "National Insurance",
+    "empaneled": true,
+    "avg_reimbursement_rate": 0.76,
+    "cashless_success_rate": 0.84,
+    "coverage_tiers": ["Standard"]
+  }
+]

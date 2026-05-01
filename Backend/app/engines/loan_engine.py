@@ -3,12 +3,20 @@ NBFC Loan Pre-Underwriting Engine (Gap 3 Resolver).
 
 Computes DTI ratio and assigns risk bands for healthcare loans.
 Formula: DTI = (Existing_EMIs + Proposed_Medical_EMI) / Gross_Monthly_Income × 100
+
+Now integrates with Neo4j NBFCRiskBand nodes per instructioncreate.md Section 6.
+Falls back to hardcoded values if graph is unavailable.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+import logging
+
+from app.engines.neo4j_loan_client import get_loan_client
+
+logger = logging.getLogger(__name__)
 
 
-# Interest rate ranges by risk band
+# Fallback interest rate ranges by risk band (used if Neo4j unavailable)
 INTEREST_RATES = {
     "low_risk": {"range": (12.0, 13.0), "approval": "Very High"},
     "medium_risk": {"range": (13.0, 15.0), "approval": "High (Conditional)"},
@@ -21,10 +29,33 @@ class LoanEngine:
     """
     Automated NBFC healthcare loan pre-underwriting engine.
     Computes DTI ratio and assigns risk bands in milliseconds.
+    
+    Integrates with Neo4j NBFCRiskBand nodes for dynamic risk assessment.
     """
 
     LOAN_COVERAGE_RATIO = 0.80  # Loan covers 80% of total estimated cost
     TENURES_MONTHS = [12, 24, 36]
+
+    def __init__(self, use_neo4j: bool = True):
+        """
+        Initialize the loan engine.
+        
+        Args:
+            use_neo4j: Whether to query NBFCRiskBand from Neo4j (default True)
+        """
+        self.use_neo4j = use_neo4j
+        self._loan_client = None
+    
+    @property
+    def loan_client(self):
+        """Lazy initialization of Neo4j loan client."""
+        if self._loan_client is None and self.use_neo4j:
+            try:
+                self._loan_client = get_loan_client()
+            except Exception as e:
+                logger.warning(f"Failed to initialize Neo4j loan client: {e}")
+                self.use_neo4j = False
+        return self._loan_client
 
     def calculate_emi(self, principal: float, tenure_months: int, annual_rate: float) -> float:
         """Standard EMI formula: P × r × (1+r)^n / ((1+r)^n - 1)"""
@@ -44,6 +75,8 @@ class LoanEngine:
         """
         Full pre-underwriting evaluation.
         Returns risk band, EMI options, and call-to-action.
+        
+        Queries Neo4j NBFCRiskBand if available, otherwise uses fallback.
         """
         loan_amount = round(total_treatment_cost * self.LOAN_COVERAGE_RATIO)
 
@@ -51,11 +84,29 @@ class LoanEngine:
         primary_emi = self.calculate_emi(loan_amount, 24, 14.0)
         primary_dti = ((existing_emis + primary_emi) / gross_monthly_income) * 100 if gross_monthly_income > 0 else 999
 
-        risk_band = self._classify_dti(primary_dti)
-        band_data = INTEREST_RATES[risk_band]
-
-        # Recalculate EMI options with actual band rate
-        actual_rate = sum(band_data["range"]) / 2 if band_data["range"][0] > 0 else 0
+        # Get risk band from Neo4j or fallback
+        if self.use_neo4j and self.loan_client:
+            try:
+                band_data = self.loan_client.get_risk_band_by_dti(primary_dti)
+                risk_band = self._neo4j_band_to_legacy(band_data["risk_flag"])
+                # Use graph-derived rates
+                actual_rate = (band_data["interest_rate_min"] + band_data["interest_rate_max"]) / 2
+                if actual_rate < 0:
+                    actual_rate = 0
+                band_info = {
+                    "range": (band_data["interest_rate_min"], band_data["interest_rate_max"]),
+                    "approval": band_data["approval_likelihood"],
+                    "from_neo4j": True
+                }
+            except Exception as e:
+                logger.warning(f"Neo4j query failed, using fallback: {e}")
+                risk_band = self._classify_dti(primary_dti)
+                band_info = INTEREST_RATES[risk_band]
+                actual_rate = sum(band_info["range"]) / 2 if band_info["range"][0] > 0 else 0
+        else:
+            risk_band = self._classify_dti(primary_dti)
+            band_info = INTEREST_RATES[risk_band]
+            actual_rate = sum(band_info["range"]) / 2 if band_info["range"][0] > 0 else 0
         final_emi_options = []
         for tenure in self.TENURES_MONTHS:
             if actual_rate > 0:
@@ -70,7 +121,8 @@ class LoanEngine:
                 "dti_at_this_tenure": dti_this,
             })
 
-        return {
+        # Build response with Neo4j data if available
+        result = {
             "loan_amount": loan_amount,
             "treatment_cost": total_treatment_cost,
             "coverage_ratio": self.LOAN_COVERAGE_RATIO,
@@ -79,14 +131,22 @@ class LoanEngine:
             "primary_dti": round(primary_dti, 1),
             "risk_band": risk_band,
             "risk_flag": self._risk_flag(primary_dti),
-            "underwriting_assessment": band_data["approval"],
-            "interest_rate_range": band_data["range"],
+            "underwriting_assessment": band_info["approval"],
+            "interest_rate_range": band_info["range"],
             "call_to_action": self._call_to_action(risk_band),
             "emi_options": final_emi_options,
         }
+        
+        # Add Neo4j-derived fields if available
+        if self.use_neo4j and hasattr(self, '_last_band_data') and self._last_band_data:
+            result["neo4j_band_id"] = self._last_band_data.get("band_id")
+            result["neo4j_cta"] = self._last_band_data.get("cta_text")
+            result["loan_coverage_pct"] = self._last_band_data.get("loan_coverage_pct")
+        
+        return result
 
     def _classify_dti(self, dti: float) -> str:
-        """Classify DTI into risk band."""
+        """Classify DTI into risk band (legacy classification)."""
         if dti < 30:
             return "low_risk"
         elif dti < 40:
@@ -94,6 +154,16 @@ class LoanEngine:
         elif dti < 50:
             return "high_risk"
         return "critical_risk"
+    
+    def _neo4j_band_to_legacy(self, risk_flag: str) -> str:
+        """Convert Neo4j risk_flag to legacy risk_band format."""
+        mapping = {
+            "LOW": "low_risk",
+            "MEDIUM": "medium_risk",
+            "HIGH": "high_risk",
+            "CRITICAL": "critical_risk"
+        }
+        return mapping.get(risk_flag, "medium_risk")
 
     def _risk_flag(self, dti: float) -> str:
         """Get visual risk flag."""
@@ -127,6 +197,7 @@ def calculate_dti_band(
     loan_amount: float,
     tenure_months: int = 24,
     annual_rate: float = 14.0,
+    use_neo4j: bool = True,
 ) -> dict:
     """
     Calculate DTI band for loan eligibility.
@@ -137,6 +208,7 @@ def calculate_dti_band(
         loan_amount: Proposed loan amount
         tenure_months: Loan tenure (default 24)
         annual_rate: Annual interest rate (default 14%)
+        use_neo4j: Whether to query from Neo4j graph (default True)
         
     Returns:
         Dict with risk_band, dti, interest_rate_min, cta, etc.
@@ -155,7 +227,27 @@ def calculate_dti_band(
     dti = (total_emis / monthly_income) * 100 if monthly_income > 0 else 999.0
     dti = round(dti, 1)
     
-    # Classify risk band
+    # Query Neo4j for risk band if enabled
+    if use_neo4j:
+        try:
+            client = get_loan_client()
+            band_data = client.get_risk_band_by_dti(dti)
+            return {
+                "dti": dti,
+                "risk_band": band_data["risk_flag"],
+                "emi": emi,
+                "loan_amount": loan_amount,
+                "interest_rate_min": band_data["interest_rate_min"],
+                "interest_rate_max": band_data["interest_rate_max"],
+                "cta": band_data["cta_text"],
+                "approval_likelihood": band_data["approval_likelihood"],
+                "loan_coverage_pct": band_data["loan_coverage_pct"],
+                "from_neo4j": True,
+            }
+        except Exception as e:
+            logger.warning(f"Neo4j query failed in calculate_dti_band: {e}")
+    
+    # Fallback classification
     if dti < 30:
         risk_band = "LOW"
         rate_range = (12.0, 13.0)

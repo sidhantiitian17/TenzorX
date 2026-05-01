@@ -1,0 +1,230 @@
+[
+  {
+    "procedure_name": "Angioplasty",
+    "icd10_code": "I25.10",
+    "phases": [
+      {
+        "phase_id": "PHASE_ANGIO_01",
+        "phase_name": "Pre-Procedure Diagnostics",
+        "phase_order": 1,
+        "phase_type": "PRE",
+        "typical_duration": "1-3 days",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_ANGIO_02",
+        "phase_name": "Interventional Procedure",
+        "phase_order": 2,
+        "phase_type": "SURGICAL",
+        "typical_duration": "2-4 hours",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_ANGIO_03",
+        "phase_name": "Hospitalization / ICU Monitoring",
+        "phase_order": 3,
+        "phase_type": "HOSPITAL_STAY",
+        "typical_duration": "2-5 days",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_ANGIO_04",
+        "phase_name": "Post-Procedure Care",
+        "phase_order": 4,
+        "phase_type": "POST",
+        "typical_duration": "4-8 weeks",
+        "is_mandatory": true
+      }
+    ]
+  },
+  {
+    "procedure_name": "Total Knee Arthroplasty",
+    "icd10_code": "M17.11",
+    "phases": [
+      {
+        "phase_id": "PHASE_TKR_01",
+        "phase_name": "Pre-Surgical Evaluation",
+        "phase_order": 1,
+        "phase_type": "PRE",
+        "typical_duration": "3-7 days",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_TKR_02",
+        "phase_name": "Core Surgery",
+        "phase_order": 2,
+        "phase_type": "SURGICAL",
+        "typical_duration": "2-3 hours",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_TKR_03",
+        "phase_name": "Post-Surgical Hospitalization",
+        "phase_order": 3,
+        "phase_type": "HOSPITAL_STAY",
+        "typical_duration": "4-7 days",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_TKR_04",
+        "phase_name": "Physiotherapy & Rehabilitation",
+        "phase_order": 4,
+        "phase_type": "POST",
+        "typical_duration": "6-12 weeks",
+        "is_mandatory": true
+      }
+    ]
+  },
+  {
+    "procedure_name": "Cataract Surgery",
+    "icd10_code": "H25.9",
+    "phases": [
+      {
+        "phase_id": "PHASE_CAT_01",
+        "phase_name": "Pre-Operative Assessment",
+        "phase_order": 1,
+        "phase_type": "PRE",
+        "typical_duration": "1 day",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_CAT_02",
+        "phase_name": "Phacoemulsification Surgery",
+        "phase_order": 2,
+        "phase_type": "SURGICAL",
+        "typical_duration": "15-30 minutes",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_CAT_03",
+        "phase_name": "Same-Day Recovery",
+        "phase_order": 3,
+        "phase_type": "HOSPITAL_STAY",
+        "typical_duration": "4-6 hours",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_CAT_04",
+        "phase_name": "Post-Operative Eye Care",
+        "phase_order": 4,
+        "phase_type": "POST",
+        "typical_duration": "2-4 weeks",
+        "is_mandatory": true
+      }
+    ]
+  },
+  {
+    "procedure_name": "Dialysis",
+    "icd10_code": "Z99.2",
+    "phases": [
+      {
+        "phase_id": "PHASE_DIAL_01",
+        "phase_name": "Access Site Preparation",
+        "phase_order": 1,
+        "phase_type": "PRE",
+        "typical_duration": "30 minutes",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_DIAL_02",
+        "phase_name": "Hemodialysis Session",
+        "phase_order": 2,
+        "phase_type": "SURGICAL",
+        "typical_duration": "3-4 hours",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_DIAL_03",
+        "phase_name": "Post-Session Observation",
+        "phase_order": 3,
+        "phase_type": "HOSPITAL_STAY",
+        "typical_duration": "30 minutes",
+        "is_mandatory": false
+      },
+      {
+        "phase_id": "PHASE_DIAL_04",
+        "phase_name": "Inter-Session Care",
+        "phase_order": 4,
+        "phase_type": "POST",
+        "typical_duration": "2-3 days (until next session)",
+        "is_mandatory": true
+      }
+    ]
+  },
+  {
+    "procedure_name": "CABG",
+    "icd10_code": "I25.10",
+    "phases": [
+      {
+        "phase_id": "PHASE_CABG_01",
+        "phase_name": "Pre-Surgical Workup",
+        "phase_order": 1,
+        "phase_type": "PRE",
+        "typical_duration": "2-5 days",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_CABG_02",
+        "phase_name": "Coronary Artery Bypass Surgery",
+        "phase_order": 2,
+        "phase_type": "SURGICAL",
+        "typical_duration": "3-6 hours",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_CABG_03",
+        "phase_name": "ICU and Step-down Recovery",
+        "phase_order": 3,
+        "phase_type": "HOSPITAL_STAY",
+        "typical_duration": "5-8 days",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_CABG_04",
+        "phase_name": "Cardiac Rehabilitation",
+        "phase_order": 4,
+        "phase_type": "POST",
+        "typical_duration": "8-12 weeks",
+        "is_mandatory": true
+      }
+    ]
+  },
+  {
+    "procedure_name": "Appendectomy",
+    "icd10_code": "K35",
+    "phases": [
+      {
+        "phase_id": "PHASE_APND_01",
+        "phase_name": "Emergency Assessment",
+        "phase_order": 1,
+        "phase_type": "PRE",
+        "typical_duration": "1-2 hours",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_APND_02",
+        "phase_name": "Appendix Removal Surgery",
+        "phase_order": 2,
+        "phase_type": "SURGICAL",
+        "typical_duration": "30-90 minutes",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_APND_03",
+        "phase_name": "Post-Operative Recovery",
+        "phase_order": 3,
+        "phase_type": "HOSPITAL_STAY",
+        "typical_duration": "1-3 days",
+        "is_mandatory": true
+      },
+      {
+        "phase_id": "PHASE_APND_04",
+        "phase_name": "Wound Healing & Follow-up",
+        "phase_order": 4,
+        "phase_type": "POST",
+        "typical_duration": "2-3 weeks",
+        "is_mandatory": true
+      }
+    ]
+  }
+]

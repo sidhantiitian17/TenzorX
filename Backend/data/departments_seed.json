@@ -1,0 +1,72 @@
+[
+  {
+    "dept_id": "DEPT_CARD",
+    "name": "Cardiology",
+    "specialty": "Cardiovascular",
+    "requires_nabh": true,
+    "description": "Diagnosis and treatment of heart and vascular conditions"
+  },
+  {
+    "dept_id": "DEPT_ORTHO",
+    "name": "Orthopedics",
+    "specialty": "Musculoskeletal",
+    "requires_nabh": false,
+    "description": "Treatment of bones, joints, ligaments, tendons and muscles"
+  },
+  {
+    "dept_id": "DEPT_NEPH",
+    "name": "Nephrology",
+    "specialty": "Renal",
+    "requires_nabh": false,
+    "description": "Diagnosis and treatment of kidney diseases and disorders"
+  },
+  {
+    "dept_id": "DEPT_ENDO",
+    "name": "Endocrinology",
+    "specialty": "Metabolic",
+    "requires_nabh": false,
+    "description": "Treatment of hormone-related diseases and metabolic disorders"
+  },
+  {
+    "dept_id": "DEPT_EMRG",
+    "name": "Emergency & Trauma",
+    "specialty": "Multi",
+    "requires_nabh": true,
+    "description": "24/7 emergency medical care and trauma management"
+  },
+  {
+    "dept_id": "DEPT_OPHTH",
+    "name": "Ophthalmology",
+    "specialty": "Ocular",
+    "requires_nabh": false,
+    "description": "Diagnosis and treatment of eye disorders and vision care"
+  },
+  {
+    "dept_id": "DEPT_GASTRO",
+    "name": "Gastroenterology",
+    "specialty": "Digestive",
+    "requires_nabh": false,
+    "description": "Treatment of digestive system disorders"
+  },
+  {
+    "dept_id": "DEPT_NEURO",
+    "name": "Neurology",
+    "specialty": "Nervous System",
+    "requires_nabh": true,
+    "description": "Diagnosis and treatment of nervous system disorders"
+  },
+  {
+    "dept_id": "DEPT_URO",
+    "name": "Urology",
+    "specialty": "Urinary",
+    "requires_nabh": false,
+    "description": "Treatment of urinary tract and male reproductive system"
+  },
+  {
+    "dept_id": "DEPT_ONCO",
+    "name": "Oncology",
+    "specialty": "Cancer",
+    "requires_nabh": true,
+    "description": "Cancer diagnosis, treatment and management"
+  }
+]

@@ -20,6 +20,14 @@ from app.api.routes.cost import router as cost_router
 from app.api.routes.loan import router as loan_router
 from app.api.routes.compare import router as compare_router
 from app.api.routes.explain import router as explain_router
+# New routes per instructionagent.md Section 6
+from app.api.routes.emi import router as emi_router
+from app.api.routes.session import router as session_router
+from app.api.routes.feedback import router as feedback_router
+from app.api.routes.save_result import router as save_result_router
+from app.api.routes.form_template import router as form_template_router
+from app.api.routes.lender import router as lender_router
+from app.api.routes.websocket import router as websocket_router
 from app.core.config import settings
 
 # ============================================================================
@@ -100,15 +108,34 @@ logger.info("FastAPI application created")
 # ============================================================================
 # CORS Middleware Configuration
 # ============================================================================
+# Add wildcard for local development to handle proxy URLs
+origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS]
+# Add regex pattern for 127.0.0.1 with any port
+origins.append("http://127.0.0.1")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight for 1 hour
 )
 
-logger.info(f"CORS middleware configured for: {settings.BACKEND_CORS_ORIGINS}")
+logger.info(f"CORS middleware configured for: {origins}")
+
+
+# ============================================================================
+# Global OPTIONS Handler for CORS Preflight
+# ============================================================================
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Handle OPTIONS preflight requests for all routes."""
+    return JSONResponse(
+        content={"message": "OK"},
+        status_code=200,
+    )
 
 
 # ============================================================================
@@ -139,6 +166,26 @@ async def health_check() -> Dict[str, Any]:
     icd10_status = "ok" if getattr(app.state, 'icd10_loaded', False) else "error"
     icd10_size = getattr(app.state, 'icd10_size', 0)
     
+    # Get list of registered routes
+    routes_info = {
+        "agents": ["ner_triage", "clinical_pathway", "hospital_discovery",
+                   "financial_engine", "geo_spatial", "xai_explainer", "appointment_paperwork"],
+        "endpoints": [
+            f"{settings.API_V1_STR}/chat",
+            f"{settings.API_V1_STR}/triage",
+            f"{settings.API_V1_STR}/hospitals",
+            f"{settings.API_V1_STR}/cost-estimate",
+            f"{settings.API_V1_STR}/loan-eligibility",
+            f"{settings.API_V1_STR}/emi-calculate",
+            f"{settings.API_V1_STR}/session",
+            f"{settings.API_V1_STR}/feedback",
+            f"{settings.API_V1_STR}/save-result",
+            f"{settings.API_V1_STR}/form-template",
+            f"{settings.API_V1_STR}/lender",
+            "/ws/chat/{{session_id}}",
+        ],
+    }
+    
     return JSONResponse(
         status_code=200,
         content={
@@ -150,13 +197,19 @@ async def health_check() -> Dict[str, Any]:
                 "status": icd10_status,
                 "keywords_loaded": icd10_size,
             },
+            "agents_implemented": routes_info["agents"],
+            "endpoints": routes_info["endpoints"],
+            "specification": "instructionagent.md",
         },
     )
 
 
 # ============================================================================
-# API Router Placeholder
+# API Router Registration
 # ============================================================================
+# Per instructionagent.md Section 6 - All API endpoints
+
+# Existing routes
 app.include_router(triage_router, prefix=settings.API_V1_STR)
 app.include_router(hospitals_router, prefix=settings.API_V1_STR)
 app.include_router(chat_router, prefix=f"{settings.API_V1_STR}/chat")
@@ -164,7 +217,27 @@ app.include_router(cost_router, prefix=f"{settings.API_V1_STR}/cost-estimate")
 app.include_router(loan_router, prefix=f"{settings.API_V1_STR}/loan-eligibility")
 app.include_router(compare_router, prefix=f"{settings.API_V1_STR}/compare")
 app.include_router(explain_router, prefix=f"{settings.API_V1_STR}/explain")
-logger.info(f"API routes registered under {settings.API_V1_STR}")
+
+# New routes per instructionagent.md
+# POST /api/emi-calculate - Real-time EMI calculation
+app.include_router(emi_router, prefix=settings.API_V1_STR)
+# GET/PATCH /api/session/{session_id} - Session management
+app.include_router(session_router, prefix=settings.API_V1_STR)
+# POST /api/feedback - Feedback submission
+app.include_router(feedback_router, prefix=settings.API_V1_STR)
+# POST /api/save-result - Save results to session
+app.include_router(save_result_router, prefix=settings.API_V1_STR)
+# GET /api/form-template/{form_name} - Form templates
+app.include_router(form_template_router, prefix=settings.API_V1_STR)
+# POST /api/lender/underwrite - Lender/insurer B2B mode
+app.include_router(lender_router, prefix=settings.API_V1_STR)
+# WebSocket /ws/chat/{session_id} - Streaming responses
+app.include_router(websocket_router)
+
+logger.info(f"✅ API routes registered under {settings.API_V1_STR}")
+logger.info("Routes: triage, hospitals, chat, cost-estimate, loan-eligibility,")
+logger.info("        compare, explain, emi-calculate, session, feedback,")
+logger.info("        save-result, form-template, lender, websocket")
 
 
 # ============================================================================

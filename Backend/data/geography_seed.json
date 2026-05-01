@@ -1,0 +1,146 @@
+[
+  {
+    "city_name": "Mumbai",
+    "state": "Maharashtra",
+    "city_tier": 1,
+    "geo_adjustment_factor": 1.0,
+    "icu_daily_rate_inr": 5534,
+    "region": "West"
+  },
+  {
+    "city_name": "Delhi",
+    "state": "Delhi",
+    "city_tier": 1,
+    "geo_adjustment_factor": 1.0,
+    "icu_daily_rate_inr": 5534,
+    "region": "North"
+  },
+  {
+    "city_name": "Bangalore",
+    "state": "Karnataka",
+    "city_tier": 1,
+    "geo_adjustment_factor": 1.0,
+    "icu_daily_rate_inr": 5534,
+    "region": "South"
+  },
+  {
+    "city_name": "Chennai",
+    "state": "Tamil Nadu",
+    "city_tier": 1,
+    "geo_adjustment_factor": 1.0,
+    "icu_daily_rate_inr": 5534,
+    "region": "South"
+  },
+  {
+    "city_name": "Hyderabad",
+    "state": "Telangana",
+    "city_tier": 1,
+    "geo_adjustment_factor": 1.0,
+    "icu_daily_rate_inr": 5534,
+    "region": "South"
+  },
+  {
+    "city_name": "Pune",
+    "state": "Maharashtra",
+    "city_tier": 1,
+    "geo_adjustment_factor": 1.0,
+    "icu_daily_rate_inr": 5534,
+    "region": "West"
+  },
+  {
+    "city_name": "Nagpur",
+    "state": "Maharashtra",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "West"
+  },
+  {
+    "city_name": "Jaipur",
+    "state": "Rajasthan",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "North"
+  },
+  {
+    "city_name": "Surat",
+    "state": "Gujarat",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "West"
+  },
+  {
+    "city_name": "Lucknow",
+    "state": "Uttar Pradesh",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "North"
+  },
+  {
+    "city_name": "Indore",
+    "state": "Madhya Pradesh",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "Central"
+  },
+  {
+    "city_name": "Bhopal",
+    "state": "Madhya Pradesh",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "Central"
+  },
+  {
+    "city_name": "Patna",
+    "state": "Bihar",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "East"
+  },
+  {
+    "city_name": "Raipur",
+    "state": "Chhattisgarh",
+    "city_tier": 3,
+    "geo_adjustment_factor": 0.833,
+    "icu_daily_rate_inr": 2638,
+    "region": "Central"
+  },
+  {
+    "city_name": "Ahmedabad",
+    "state": "Gujarat",
+    "city_tier": 2,
+    "geo_adjustment_factor": 0.917,
+    "icu_daily_rate_inr": 5427,
+    "region": "West"
+  },
+  {
+    "city_name": "Nashik",
+    "state": "Maharashtra",
+    "city_tier": 3,
+    "geo_adjustment_factor": 0.833,
+    "icu_daily_rate_inr": 2638,
+    "region": "West"
+  },
+  {
+    "city_name": "Ranchi",
+    "state": "Jharkhand",
+    "city_tier": 3,
+    "geo_adjustment_factor": 0.833,
+    "icu_daily_rate_inr": 2638,
+    "region": "East"
+  },
+  {
+    "city_name": "Guwahati",
+    "state": "Assam",
+    "city_tier": 3,
+    "geo_adjustment_factor": 0.833,
+    "icu_daily_rate_inr": 2638,
+    "region": "Northeast"
+  }
+]

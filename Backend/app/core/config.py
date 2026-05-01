@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     """
     
     # ============================================================================
+    # Geo-Spatial Configuration
+    # ============================================================================
+    GOOGLE_MAPS_API_KEY: str = ""
+    """Google Maps API key for geocoding and map services."""
+    
+    NOMINATIM_USER_AGENT: str = "healthnav-india"
+    """User agent for Nominatim geocoding service (OpenStreetMap)."""
+    
+    # ============================================================================
     # Neo4j Database Configuration
     # ============================================================================
     NEO4J_URI: str = ""
@@ -68,10 +77,13 @@ class Settings(BaseSettings):
     # CORS Configuration
     # ============================================================================
     BACKEND_CORS_ORIGINS: list[str] = [
-    "https://tenzor-x.vercel.app", 
-    "http://localhost:8000", 
-    "http://localhost:3000"
-]
+        "https://tenzor-x.vercel.app",
+        "http://localhost:8000",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1",
+    ]
     """
     List of allowed CORS origins for frontend communication.
     Production: https://tenzor-x.vercel.app/
@@ -106,6 +118,21 @@ class Settings(BaseSettings):
     # ============================================================================
     LOG_LEVEL: str = "INFO"
     """Application logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)."""
+    
+    # ============================================================================
+    # Session & Memory Configuration
+    # ============================================================================
+    REDIS_URL: str = ""
+    """Redis connection URL for session storage. Format: redis://hostname:port."""
+    
+    OFFLINE_FALLBACK_ENABLED: bool = True
+    """Enable offline fallback mode when LLM services are unavailable."""
+    
+    CONFIDENCE_THRESHOLD_WARN: int = 60
+    """Confidence score threshold for showing warning banner."""
+    
+    CONFIDENCE_THRESHOLD_BLOCK: int = 40
+    """Confidence score threshold for blocking results."""
     
     # ============================================================================
     # Feature Flags

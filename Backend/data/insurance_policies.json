@@ -1,0 +1,74 @@
+[
+  {
+    "policy_id": "INS_BASIC",
+    "policy_name": "Basic Mediclaim",
+    "sum_insured_max_inr": 300000,
+    "room_rent_cap_pct": 1.0,
+    "icu_cap_pct": 2.0,
+    "covers_pre_existing": false,
+    "waiting_period_months": 48,
+    "cashless_available": true,
+    "typical_copay_pct": 0.0,
+    "eligibility_note": "Standard individual or family floater"
+  },
+  {
+    "policy_id": "INS_STANDARD",
+    "policy_name": "Standard Health Insurance (5L)",
+    "sum_insured_max_inr": 500000,
+    "room_rent_cap_pct": 1.0,
+    "icu_cap_pct": 2.0,
+    "covers_pre_existing": true,
+    "waiting_period_months": 24,
+    "cashless_available": true,
+    "typical_copay_pct": 0.0,
+    "eligibility_note": "Family floater recommended"
+  },
+  {
+    "policy_id": "INS_PREMIUM",
+    "policy_name": "Super Top-Up / Premium Plan (10L+)",
+    "sum_insured_max_inr": 1000000,
+    "room_rent_cap_pct": 0.0,
+    "icu_cap_pct": 0.0,
+    "covers_pre_existing": true,
+    "waiting_period_months": 12,
+    "cashless_available": true,
+    "typical_copay_pct": 0.0,
+    "eligibility_note": "No room rent capping, single private room"
+  },
+  {
+    "policy_id": "INS_GOVT_PMJAY",
+    "policy_name": "PM-JAY (Ayushman Bharat)",
+    "sum_insured_max_inr": 500000,
+    "room_rent_cap_pct": 0.0,
+    "icu_cap_pct": 0.0,
+    "covers_pre_existing": true,
+    "waiting_period_months": 0,
+    "cashless_available": true,
+    "typical_copay_pct": 0.0,
+    "eligibility_note": "Below Poverty Line families only; government hospitals empaneled"
+  },
+  {
+    "policy_id": "INS_SENIOR",
+    "policy_name": "Senior Citizen Health Plan",
+    "sum_insured_max_inr": 500000,
+    "room_rent_cap_pct": 1.0,
+    "icu_cap_pct": 2.0,
+    "covers_pre_existing": true,
+    "waiting_period_months": 12,
+    "cashless_available": true,
+    "typical_copay_pct": 20.0,
+    "eligibility_note": "Age 60+; co-pay applicable for all claims"
+  },
+  {
+    "policy_id": "INS_CORPORATE",
+    "policy_name": "Corporate Group Health",
+    "sum_insured_max_inr": 500000,
+    "room_rent_cap_pct": 0.0,
+    "icu_cap_pct": 0.0,
+    "covers_pre_existing": true,
+    "waiting_period_months": 0,
+    "cashless_available": true,
+    "typical_copay_pct": 0.0,
+    "eligibility_note": "Employer-provided; no waiting periods"
+  }
+]

@@ -1,0 +1,141 @@
+[
+  {
+    "disease_icd10": "I25.10",
+    "disease_name": "Atherosclerotic heart disease",
+    "diagnostic_procedures": [
+      {
+        "name": "ECG",
+        "icd10_code": "R94.31",
+        "typical_cost_inr": 500
+      },
+      {
+        "name": "Stress Test",
+        "icd10_code": "R94.39",
+        "typical_cost_inr": 3000
+      },
+      {
+        "name": "Echocardiogram",
+        "icd10_code": "R93.1",
+        "typical_cost_inr": 2500
+      },
+      {
+        "name": "Diagnostic Angiography",
+        "icd10_code": "I88.0",
+        "typical_cost_inr": 15000
+      }
+    ],
+    "treatment_procedures": [
+      {
+        "name": "Angioplasty",
+        "requires_workup": ["Diagnostic Angiography"]
+      },
+      {
+        "name": "CABG",
+        "requires_workup": ["Diagnostic Angiography", "Stress Test"]
+      }
+    ]
+  },
+  {
+    "disease_icd10": "M17.11",
+    "disease_name": "Primary osteoarthritis of knee",
+    "diagnostic_procedures": [
+      {
+        "name": "X-ray Knee",
+        "icd10_code": "R93.6",
+        "typical_cost_inr": 800
+      },
+      {
+        "name": "MRI Knee",
+        "icd10_code": "R93.6",
+        "typical_cost_inr": 6000
+      },
+      {
+        "name": "Blood Tests",
+        "icd10_code": "R70",
+        "typical_cost_inr": 1500
+      }
+    ],
+    "treatment_procedures": [
+      {
+        "name": "Total Knee Arthroplasty",
+        "requires_workup": ["X-ray Knee", "Blood Tests"]
+      }
+    ]
+  },
+  {
+    "disease_icd10": "H25.9",
+    "disease_name": "Age-related cataract",
+    "diagnostic_procedures": [
+      {
+        "name": "Eye Examination",
+        "icd10_code": "Z01.0",
+        "typical_cost_inr": 500
+      },
+      {
+        "name": "Biometry",
+        "icd10_code": "Z01.0",
+        "typical_cost_inr": 1500
+      }
+    ],
+    "treatment_procedures": [
+      {
+        "name": "Cataract Surgery",
+        "requires_workup": ["Eye Examination", "Biometry"]
+      }
+    ]
+  },
+  {
+    "disease_icd10": "N18",
+    "disease_name": "Chronic kidney disease",
+    "diagnostic_procedures": [
+      {
+        "name": "Serum Creatinine",
+        "icd10_code": "R94.4",
+        "typical_cost_inr": 400
+      },
+      {
+        "name": "eGFR Test",
+        "icd10_code": "R94.4",
+        "typical_cost_inr": 600
+      },
+      {
+        "name": "Ultrasound Kidney",
+        "icd10_code": "R93.4",
+        "typical_cost_inr": 1200
+      }
+    ],
+    "treatment_procedures": [
+      {
+        "name": "Dialysis",
+        "requires_workup": ["Serum Creatinine", "eGFR Test"]
+      }
+    ]
+  },
+  {
+    "disease_icd10": "K35",
+    "disease_name": "Acute appendicitis",
+    "diagnostic_procedures": [
+      {
+        "name": "Blood Tests",
+        "icd10_code": "R70",
+        "typical_cost_inr": 1500
+      },
+      {
+        "name": "Ultrasound Abdomen",
+        "icd10_code": "R93.5",
+        "typical_cost_inr": 1500
+      },
+      {
+        "name": "CT Scan Abdomen",
+        "icd10_code": "R93.5",
+        "typical_cost_inr": 5000
+      }
+    ],
+    "treatment_procedures": [
+      {
+        "name": "Appendectomy",
+        "requires_workup": ["Blood Tests", "Ultrasound Abdomen"]
+      }
+    ]
+  }
+]

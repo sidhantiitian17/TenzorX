@@ -1,0 +1,206 @@
+[
+  {
+    "procedure_name": "Angioplasty",
+    "icd10_code": "I25.10",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "Diagnostics - ECG, Stress Test, Echocardiogram, Diagnostic Angiography",
+        "base_cost_min_inr": 10000,
+        "base_cost_max_inr": 30000,
+        "typical_days": 1
+      },
+      {
+        "phase": "procedure",
+        "description": "Balloon Angioplasty, Drug-Eluting Stent Placement",
+        "base_cost_min_inr": 100000,
+        "base_cost_max_inr": 250000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "ICU Monitoring, General Ward Recovery",
+        "base_cost_min_inr": 20000,
+        "base_cost_max_inr": 60000,
+        "typical_days": 3
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Anti-platelets, Statins, Follow-up Consultations",
+        "base_cost_min_inr": 10000,
+        "base_cost_max_inr": 30000,
+        "typical_days": 90
+      }
+    ]
+  },
+  {
+    "procedure_name": "Total Knee Arthroplasty",
+    "icd10_code": "M17.11",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "X-rays, Blood Tests, Anesthesia Evaluation",
+        "base_cost_min_inr": 8000,
+        "base_cost_max_inr": 20000,
+        "typical_days": 1
+      },
+      {
+        "phase": "procedure",
+        "description": "TKR Surgery, Prosthetic Implant",
+        "base_cost_min_inr": 150000,
+        "base_cost_max_inr": 400000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "Post-op Care, Physiotherapy Start",
+        "base_cost_min_inr": 30000,
+        "base_cost_max_inr": 80000,
+        "typical_days": 5
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Physiotherapy, Pain Management, Follow-ups",
+        "base_cost_min_inr": 15000,
+        "base_cost_max_inr": 40000,
+        "typical_days": 60
+      }
+    ]
+  },
+  {
+    "procedure_name": "Cataract Surgery",
+    "icd10_code": "H25.9",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "Eye Examination, Biometry, IOL Selection",
+        "base_cost_min_inr": 2000,
+        "base_cost_max_inr": 5000,
+        "typical_days": 1
+      },
+      {
+        "phase": "procedure",
+        "description": "Phacoemulsification, IOL Implantation",
+        "base_cost_min_inr": 15000,
+        "base_cost_max_inr": 70000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "Day Care or Overnight Stay",
+        "base_cost_min_inr": 2000,
+        "base_cost_max_inr": 10000,
+        "typical_days": 1
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Eye Drops, Follow-up Visits",
+        "base_cost_min_inr": 2000,
+        "base_cost_max_inr": 5000,
+        "typical_days": 30
+      }
+    ]
+  },
+  {
+    "procedure_name": "Dialysis",
+    "icd10_code": "Z99.2",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "Access Site Preparation, Blood Work",
+        "base_cost_min_inr": 1000,
+        "base_cost_max_inr": 3000,
+        "typical_days": 0
+      },
+      {
+        "phase": "procedure",
+        "description": "Hemodialysis Session",
+        "base_cost_min_inr": 2000,
+        "base_cost_max_inr": 7000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "Same-day discharge",
+        "base_cost_min_inr": 0,
+        "base_cost_max_inr": 0,
+        "typical_days": 0
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Medications, Dietary Management",
+        "base_cost_min_inr": 500,
+        "base_cost_max_inr": 1500,
+        "typical_days": 1
+      }
+    ]
+  },
+  {
+    "procedure_name": "CABG",
+    "icd10_code": "I25.10",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "Angiography, Cardiac Workup, Anesthesia Assessment",
+        "base_cost_min_inr": 25000,
+        "base_cost_max_inr": 50000,
+        "typical_days": 2
+      },
+      {
+        "phase": "procedure",
+        "description": "Coronary Artery Bypass Grafting",
+        "base_cost_min_inr": 180000,
+        "base_cost_max_inr": 450000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "ICU Recovery, Step-down Unit, General Ward",
+        "base_cost_min_inr": 50000,
+        "base_cost_max_inr": 120000,
+        "typical_days": 8
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Cardiac Rehabilitation, Medications, Follow-ups",
+        "base_cost_min_inr": 20000,
+        "base_cost_max_inr": 50000,
+        "typical_days": 180
+      }
+    ]
+  },
+  {
+    "procedure_name": "Appendectomy",
+    "icd10_code": "K35",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "Blood Tests, Imaging, Pre-op Assessment",
+        "base_cost_min_inr": 3000,
+        "base_cost_max_inr": 8000,
+        "typical_days": 1
+      },
+      {
+        "phase": "procedure",
+        "description": "Laparoscopic or Open Appendectomy",
+        "base_cost_min_inr": 40000,
+        "base_cost_max_inr": 100000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "Post-operative Recovery",
+        "base_cost_min_inr": 8000,
+        "base_cost_max_inr": 20000,
+        "typical_days": 2
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Antibiotics, Wound Care, Follow-up",
+        "base_cost_min_inr": 2000,
+        "base_cost_max_inr": 5000,
+        "typical_days": 14
+      }
+    ]
+  }
+]

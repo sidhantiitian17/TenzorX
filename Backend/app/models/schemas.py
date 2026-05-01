@@ -139,16 +139,16 @@ class UserQueryRequest(BaseModel):
         min_length=10,
         max_length=1000
     )
-    location: Location = Field(
-        ..., 
+    location: Optional[Location] = Field(
+        None,
         description="Geographic location for the query"
     )
-    patient_profile: PatientProfile = Field(
-        default_factory=PatientProfile,
+    patient_profile: Optional[PatientProfile] = Field(
+        None,
         description="Patient medical and demographic information"
     )
-    financial_profile: FinancialProfile = Field(
-        ..., 
+    financial_profile: Optional[FinancialProfile] = Field(
+        None,
         description="Patient financial constraints and capacity"
     )
     session_id: Optional[str] = Field(

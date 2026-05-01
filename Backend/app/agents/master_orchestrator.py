@@ -244,8 +244,8 @@ class MasterOrchestrator:
         
         triage_result = {
             "agent": "ner_triage",
-            "canonical_procedure": rag_result.get("procedure", ""),
-            "category": rag_result.get("medical_category", ""),
+            "canonical_procedure": rag_result.get("procedure") or "",
+            "category": rag_result.get("medical_category") or "",
             "icd10": icd10_data.get("code", "") if isinstance(icd10_data, dict) else str(icd10_data),
             "snomed_ct": icd10_data.get("snomed_code", "") if isinstance(icd10_data, dict) else "",
             "city": location,

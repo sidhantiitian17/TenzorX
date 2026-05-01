@@ -45,7 +45,7 @@ export default function HomePage() {
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
   const [showEmergency, setShowEmergency] = useState(false);
   const [resultsExpanded, setResultsExpanded] = useState(false);
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId] = useState(() => `session_${crypto.randomUUID()}`);
 
   const selectedHospitals = useMemo(
     () => state.searchResults.filter((h: { id: string }) => selectedIds.includes(h.id)),

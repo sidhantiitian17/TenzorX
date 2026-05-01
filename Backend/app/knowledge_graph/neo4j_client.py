@@ -4,10 +4,11 @@ Neo4j Graph Database Client.
 Provides connectivity and query execution for the medical knowledge graph.
 """
 
-import os
 import logging
 from typing import List, Dict, Any, Optional
 from neo4j import GraphDatabase
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,9 @@ class Neo4jClient:
         user: Optional[str] = None,
         password: Optional[str] = None,
     ):
-        self.uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
-        self.user = user or os.getenv("NEO4J_USER", "neo4j")
-        self.password = password or os.getenv("NEO4J_PASSWORD", "password")
+        self.uri = uri or settings.NEO4J_URI
+        self.user = user or settings.NEO4J_USER
+        self.password = password or settings.NEO4J_PASSWORD
         
         self.driver = GraphDatabase.driver(
             self.uri,

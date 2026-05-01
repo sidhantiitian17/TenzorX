@@ -111,3 +111,47 @@ class PathwayEngine:
             return json.loads(clean)
         except Exception:
             return []
+
+
+# =============================================================================
+# Module-level Pathway Generator (TC-20)
+# =============================================================================
+
+
+def generate_pathway(icd_code: str, procedure: str) -> list[dict]:
+    """
+    Generate clinical pathway phases for a procedure.
+    
+    Args:
+        icd_code: ICD-10 code (e.g., "I25.10")
+        procedure: Procedure name (e.g., "angioplasty")
+        
+    Returns:
+        List of phase dicts with keys: phase, name, description, cost_range
+    """
+    engine = PathwayEngine()
+    steps = engine.get_pathway(procedure, icd_code)
+    
+    # Map steps to standardized phases
+    phase_map = {
+        1: "pre_diagnostics",
+        2: "procedure",
+        3: "hospitalization",
+        4: "post_care",
+        5: "post_care",
+        6: "post_care",
+    }
+    
+    pathway = []
+    for step in steps:
+        phase = phase_map.get(step.get("step", 0), "other")
+        pathway.append({
+            "phase": phase,
+            "step": step.get("step"),
+            "name": step.get("name"),
+            "description": step.get("description"),
+            "cost_range": step.get("cost_range"),
+            "typical_duration": step.get("typical_duration"),
+        })
+    
+    return pathway

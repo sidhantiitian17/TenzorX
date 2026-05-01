@@ -85,3 +85,63 @@ def classify_symptom_severity(symptoms: str | Iterable[str]) -> SeverityClassifi
         severity="Green",
         rationale="No emergency or urgent symptom pattern detected by heuristic rules.",
     )
+
+
+# =============================================================================
+# ICD-10 Aware Severity Classification (TC-15 to TC-17)
+# =============================================================================
+
+# ICD-10 codes that indicate emergency (RED) conditions
+_RED_ICD_PREFIXES: tuple[str, ...] = (
+    "I21",  # Acute myocardial infarction
+    "I22",  # Subsequent myocardial infarction
+    "R07.4",  # Chest pain on breathing
+    "J44.1",  # COPD with acute exacerbation
+    "R55",  # Syncope and collapse
+)
+
+# ICD-10 codes for elective/orthopedic procedures (GREEN)
+_GREEN_ICD_PREFIXES: tuple[str, ...] = (
+    "M17",  # Primary osteoarthritis (knee/hip replacement candidates)
+    "M16",  # Hip osteoarthritis
+    "Z98",  # Post-procedural status (follow-up visits)
+)
+
+
+def classify_severity(entities: list[dict], raw_text: str) -> str:
+    """
+    Classify severity based on ICD-10 codes and raw text.
+    
+    Args:
+        entities: List of entity dicts with 'primary_code' key
+        raw_text: Original user input text
+        
+    Returns:
+        "RED", "YELLOW", or "GREEN"
+    """
+    text_lower = raw_text.lower()
+    
+    # Check for emergency keywords in text
+    if any(keyword in text_lower for keyword in _RED_KEYWORDS):
+        return "RED"
+    
+    # Check for emergency ICD-10 codes
+    for entity in entities:
+        code = entity.get("primary_code", "")
+        if code and any(code.startswith(prefix) for prefix in _RED_ICD_PREFIXES):
+            return "RED"
+    
+    # Check for elective procedure ICD-10 codes (GREEN indicators)
+    for entity in entities:
+        code = entity.get("primary_code", "")
+        if code and any(code.startswith(prefix) for prefix in _GREEN_ICD_PREFIXES):
+            return "GREEN"
+    
+    # Check for yellow keywords
+    if any(keyword in text_lower for keyword in _YELLOW_KEYWORDS):
+        return "YELLOW"
+    
+    # Default to YELLOW if unknown, GREEN if empty
+    if entities:
+        return "YELLOW"
+    return "GREEN"

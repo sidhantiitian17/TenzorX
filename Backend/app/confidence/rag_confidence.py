@@ -118,3 +118,47 @@ Score these three dimensions:"""
         if score >= 0.40:
             return "Moderate"
         return "Low"
+
+
+# =============================================================================
+# Module-level Confidence Functions (TC-30 to TC-31)
+# =============================================================================
+
+
+def compute_confidence(
+    faithfulness: float,
+    contextual_relevancy: float,
+    answer_relevancy: float,
+) -> float:
+    """
+    Compute composite confidence score.
+    
+    Formula: S = 0.4 × Faithfulness + 0.3 × Contextual_Relevancy + 0.3 × Answer_Relevancy
+    
+    Args:
+        faithfulness: Faithfulness score (0.0 - 1.0)
+        contextual_relevancy: Contextual relevancy score (0.0 - 1.0)
+        answer_relevancy: Answer relevancy score (0.0 - 1.0)
+        
+    Returns:
+        Composite confidence score (0.0 - 1.0)
+    """
+    return (
+        0.4 * faithfulness +
+        0.3 * contextual_relevancy +
+        0.3 * answer_relevancy
+    )
+
+
+def should_show_disclaimer(score: float, threshold: float = 0.70) -> bool:
+    """
+    Determine if uncertainty disclaimer should be shown.
+    
+    Args:
+        score: Composite confidence score
+        threshold: Minimum acceptable score (default 0.70)
+        
+    Returns:
+        True if disclaimer should be shown
+    """
+    return score < threshold

@@ -214,3 +214,53 @@ class NERPipeline:
     def extract_conditions(self, text: str) -> List[str]:
         """Convenience method to extract only condition entities."""
         return [e.normalized for e in self.extract(text) if e.label == "CONDITION"]
+
+
+# =============================================================================
+# Module-level NER + ICD-10 Integration (TC-11 to TC-14)
+# =============================================================================
+
+from app.nlp.icd10_mapper import lookup_icd10
+
+
+def extract_and_standardize(user_text: str) -> dict:
+    """
+    Step 1: NER extracts raw entities.
+    Step 2: ICD-10 lookup standardizes each entity.
+
+    Returns a structured payload for the LangChain agent.
+    Handles empty input gracefully (TC-13) and Hindi/mixed language (TC-14).
+    """
+    # Handle empty input (TC-13)
+    if not user_text or not user_text.strip():
+        return {
+            "raw_text": user_text or "",
+            "entities": [],
+            "icd_summary": [],
+        }
+
+    # Initialize NER pipeline
+    ner = NERPipeline()
+    
+    # Step 1: Extract entities
+    raw_entities = ner.extract(user_text)
+    
+    # Step 2: ICD-10 standardization
+    standardized = []
+    for entity in raw_entities:
+        # Use entity text for lookup
+        entity_text = entity.normalized or entity.text
+        icd_matches = lookup_icd10(entity_text, top_k=2)
+        standardized.append({
+            "raw_entity": entity_text,
+            "label": entity.label,
+            "icd_codes": icd_matches,
+            "primary_code": icd_matches[0]["code"] if icd_matches else "UNKNOWN",
+            "primary_description": icd_matches[0]["description"] if icd_matches else entity_text,
+        })
+
+    return {
+        "raw_text": user_text,
+        "entities": standardized,
+        "icd_summary": [s["primary_code"] for s in standardized if s["primary_code"] != "UNKNOWN"],
+    }

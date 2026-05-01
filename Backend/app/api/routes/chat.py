@@ -4,12 +4,14 @@ Chat API route.
 Primary conversational endpoint for the healthcare agent.
 """
 
+import logging
 from fastapi import APIRouter, HTTPException
 from app.schemas.request_models import ChatRequest
 from app.schemas.response_models import ChatResponse
 from app.agents.healthcare_agent import HealthcareAgent
 from app.confidence.rag_confidence import RAGConfidenceScorer
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 agent = HealthcareAgent()
 confidence_scorer = RAGConfidenceScorer()
@@ -21,6 +23,7 @@ async def chat_endpoint(request: ChatRequest):
     Primary conversational endpoint.
     Accepts user message + session context, returns structured AI response.
     """
+    logger.info(f"📝 Chat request received: session={request.session_id}, message='{request.message[:50]}...'")
     try:
         result = agent.process(
             session_id=request.session_id,
@@ -28,6 +31,7 @@ async def chat_endpoint(request: ChatRequest):
             location=request.location or "",
             patient_profile=request.patient_profile.model_dump() if request.patient_profile else {},
         )
+        logger.info(f"🤖 LLM response generated: {len(result.get('narrative', ''))} chars")
 
         # Score RAG confidence
         confidence = confidence_scorer.score(

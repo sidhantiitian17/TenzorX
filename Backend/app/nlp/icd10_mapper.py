@@ -213,3 +213,125 @@ class ICD10Mapper:
                     break
         
         return matches
+
+
+# =============================================================================
+# Module-level functions for test compatibility (TC-01 to TC-10)
+# =============================================================================
+
+_icd10_index: Optional[dict] = None  # lazy-loaded singleton
+
+SEARCH_PATHS = [
+    "data/icd10_2022.json",
+    "data/icd10_fallback.json",
+    os.path.join(os.path.dirname(__file__), "..", "..", "data", "icd10_2022.json"),
+    os.path.join(os.path.dirname(__file__), "..", "..", "data", "icd10_fallback.json"),
+]
+
+
+def _build_index(raw) -> dict:
+    """
+    Build a keyword -> [ICD codes] lookup dictionary.
+    Supports both list-of-dicts and dict-with-code-keys formats.
+    """
+    index = {}
+    
+    # Handle dict format where keys are codes and values are descriptions
+    if isinstance(raw, dict):
+        for code, desc in raw.items():
+            if not code or not desc:
+                continue
+            # Index every meaningful word in the description
+            for word in str(desc).lower().split():
+                word = word.strip(".,;:!?()")
+                if len(word) > 2:  # skip very short words
+                    index.setdefault(word, []).append({"code": code, "description": str(desc)})
+    # Handle list format
+    elif isinstance(raw, list):
+        for entry in raw:
+            code = entry.get("code", entry.get("Code", "")) if isinstance(entry, dict) else ""
+            desc = entry.get("description", entry.get("desc", entry.get("Description", ""))) if isinstance(entry, dict) else ""
+            if not code or not desc:
+                continue
+            # Index every meaningful word in the description
+            for word in str(desc).lower().split():
+                word = word.strip(".,;:!?()")
+                if len(word) > 2:  # skip very short words
+                    index.setdefault(word, []).append({"code": code, "description": str(desc)})
+    return index
+
+
+def load_icd10() -> dict:
+    """
+    Returns keyword index. Tries all paths. Auto-downloads if missing.
+    Raises RuntimeError only if ALL fallbacks fail.
+    
+    This function is idempotent (singleton caching works) - TC-05.
+    """
+    global _icd10_index
+    if _icd10_index is not None:
+        return _icd10_index
+
+    for path in SEARCH_PATHS:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                # Normalize: only if the dict has 'codes' or 'data' key
+                if isinstance(raw, dict):
+                    # Check if it's a wrapped format with codes/data key
+                    if "codes" in raw or "data" in raw:
+                        raw = raw.get("codes", raw.get("data"))
+                    # Otherwise keep it as-is (it's already {code: desc} format)
+                _icd10_index = _build_index(raw)
+                logger.info(
+                    f"ICD-10 loaded from '{path}'. "
+                    f"Index size: {len(_icd10_index)} keywords."
+                )
+                return _icd10_index
+            except Exception as e:
+                logger.warning(f"Failed to load ICD-10 from '{path}': {e}")
+
+    # Last resort: attempt download
+    logger.warning("ICD-10 file not found in any location. Attempting download...")
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+        from setup_data import download_icd10
+        if download_icd10():
+            return load_icd10()  # recursive retry after download
+    except Exception as e:
+        logger.error(f"Auto-download failed: {e}")
+
+    raise RuntimeError(
+        "ICD-10 data unavailable. Run `python setup_data.py` to download it. "
+        "Alternatively, ensure 'data/icd10_fallback.json' exists."
+    )
+
+
+def lookup_icd10(symptom_phrase: str, top_k: int = 3) -> list[dict]:
+    """
+    Maps a symptom phrase to the top_k most likely ICD-10 codes.
+    
+    Args:
+        symptom_phrase: Free-text symptom, e.g. "severe chest pain"
+        top_k: Maximum number of ICD codes to return
+        
+    Returns:
+        List of dicts: [{"code": "R07.9", "description": "Chest pain, unspecified"}, ...]
+        Returns empty list if no matches found (TC-09).
+    """
+    index = load_icd10()
+    scores: dict[str, dict] = {}
+
+    keywords = symptom_phrase.lower().split()
+    for word in keywords:
+        word = word.strip(".,;:!?()")
+        matches = index.get(word, [])
+        for match in matches:
+            code = match["code"]
+            scores[code] = scores.get(code, {"code": code, "description": match["description"], "score": 0})
+            scores[code]["score"] += 1
+
+    ranked = sorted(scores.values(), key=lambda x: x["score"], reverse=True)
+    return [{"code": r["code"], "description": r["description"]} for r in ranked[:top_k]]

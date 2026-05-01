@@ -87,6 +87,7 @@ class NvidiaClient:
             "stream": self.stream,
         }
 
+        logger.info(f"🌐 Calling NVIDIA LLM API: {NVIDIA_API_URL}")
         try:
             response = requests.post(
                 NVIDIA_API_URL, 
@@ -95,8 +96,9 @@ class NvidiaClient:
                 timeout=60
             )
             response.raise_for_status()
+            logger.info(f"✅ NVIDIA LLM API response received: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            logger.error(f"NVIDIA API request failed: {e}")
+            logger.error(f"❌ NVIDIA API request failed: {e}")
             raise RuntimeError(f"NVIDIA LLM API error: {e}") from e
 
         data = response.json()

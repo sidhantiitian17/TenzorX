@@ -49,6 +49,20 @@ async def lifespan(app: FastAPI):
     logger.info(f"API Base Path: {settings.API_V1_STR}")
     logger.info(f"Debug Mode: {settings.DEBUG}")
     
+    # Initialize ICD-10 Medical Ontology (TC-23)
+    logger.info("Initializing ICD-10 Medical Ontology...")
+    try:
+        from app.nlp.icd10_mapper import load_icd10
+        icd10_index = load_icd10()
+        logger.info(f"✅ ICD-10 Ontology loaded ({len(icd10_index):,} clinical keywords)")
+        app.state.icd10_loaded = True
+        app.state.icd10_size = len(icd10_index)
+    except RuntimeError as e:
+        logger.error(f"⚠️ ICD-10 Medical Ontology could not be loaded: {e}")
+        logger.error("Run `python setup_data.py` to download ICD-10 data")
+        app.state.icd10_loaded = False
+        app.state.icd10_error = str(e)
+    
     # Initialize Neo4j driver (placeholder - implement in services)
     logger.info(f"Connecting to Neo4j at {settings.NEO4J_URI}...")
     # driver = GraphDatabase.driver(
@@ -121,6 +135,10 @@ async def health_check() -> Dict[str, Any]:
             "environment": "development"
         }
     """
+    # Check ICD-10 status
+    icd10_status = "ok" if getattr(app.state, 'icd10_loaded', False) else "error"
+    icd10_size = getattr(app.state, 'icd10_size', 0)
+    
     return JSONResponse(
         status_code=200,
         content={
@@ -128,6 +146,10 @@ async def health_check() -> Dict[str, Any]:
             "service": settings.PROJECT_NAME,
             "version": settings.VERSION,
             "environment": "development" if settings.DEBUG else "production",
+            "icd10": {
+                "status": icd10_status,
+                "keywords_loaded": icd10_size,
+            },
         },
     )
 

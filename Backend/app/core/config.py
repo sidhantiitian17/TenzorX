@@ -48,21 +48,21 @@ class Settings(BaseSettings):
     # ============================================================================
     # Neo4j Database Configuration
     # ============================================================================
-    NEO4J_URI: str = "bolt://localhost:7687"
+    NEO4J_URI: str = ""
     """
     Neo4j database connection URI.
-    Format: bolt://hostname:port
-    Default: local Neo4j instance on port 7687
+    Format: bolt://hostname:port or neo4j://hostname:port
+    Loaded from environment variable NEO4J_URI
     """
     
-    NEO4J_USER: str = "neo4j"
-    """Neo4j database username for authentication."""
+    NEO4J_USER: str = ""
+    """Neo4j database username for authentication. Loaded from NEO4J_USER env var."""
     
-    NEO4J_PASSWORD: str = "password"
-    """Neo4j database password for authentication."""
+    NEO4J_PASSWORD: str = ""
+    """Neo4j database password for authentication. Loaded from NEO4J_PASSWORD env var."""
     
     NEO4J_DATABASE: str = "neo4j"
-    """Neo4j database name to connect to."""
+    """Neo4j database name to connect to. Loaded from NEO4J_DATABASE env var."""
     
     # ============================================================================
     # CORS Configuration

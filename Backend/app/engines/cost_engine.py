@@ -106,3 +106,76 @@ class CostEngine:
             "confidence": 0.0,
             **benchmark,
         }
+
+
+# =============================================================================
+# Module-level Cost Functions (TC-18 to TC-19)
+# =============================================================================
+
+# Geographic multipliers (γ_geo)
+GEO_MULTIPLIERS = {
+    1: 1.00,  # Tier 1: Mumbai, Delhi, Bangalore (baseline)
+    2: 0.92,  # Tier 2: Nagpur, Jaipur, Lucknow
+    3: 0.83,  # Tier 3: Raipur, Ahmedabad, Patna
+}
+
+# Comorbidity multipliers (ωᵢ)
+COMORBIDITY_MULTIPLIERS = {
+    "heart_failure": 3.3,
+    "hf": 3.3,
+    "i50.9": 3.3,
+    "diabetes": 0.8,
+    "dm": 0.8,
+    "e11.9": 0.8,
+    "hypertension": 0.5,
+    "htn": 0.5,
+    "i10": 0.5,
+    "ckd": 1.5,
+    "n18.9": 1.5,
+    "copd": 1.2,
+    "j44.1": 1.2,
+    "ascvd": 1.2,
+    "i25.10": 1.2,
+}
+
+
+def calculate_adjusted_cost(base_cost: float, city_tier: int) -> float:
+    """
+    Calculate cost adjusted for geographic tier.
+    
+    Formula: Adjusted_Cost = Base_Cost × γ_geo
+    
+    Args:
+        base_cost: Base cost in INR (Tier 1 baseline)
+        city_tier: 1, 2, or 3
+        
+    Returns:
+        Adjusted cost in INR
+    """
+    multiplier = GEO_MULTIPLIERS.get(city_tier, 0.92)  # Default to Tier 2
+    return round(base_cost * multiplier)
+
+
+def calculate_final_cost(adjusted_cost: float, comorbidities: list[str]) -> float:
+    """
+    Calculate final cost with comorbidity adjustments.
+    
+    Formula: Final_Cost = Adjusted_Cost × (1 + Σ ωᵢCᵢ)
+    
+    Args:
+        adjusted_cost: Geographic-adjusted cost
+        comorbidities: List of comorbidity names/codes
+        
+    Returns:
+        Final cost in INR
+    """
+    if not comorbidities:
+        return round(adjusted_cost)
+    
+    total_multiplier = 1.0
+    for comorbidity in comorbidities:
+        key = comorbidity.lower().strip()
+        mult = COMORBIDITY_MULTIPLIERS.get(key, 0.0)
+        total_multiplier += mult
+    
+    return round(adjusted_cost * total_multiplier)

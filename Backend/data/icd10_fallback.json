@@ -1,0 +1,22 @@
+[
+  {"code": "R07.9",  "description": "Chest pain, unspecified"},
+  {"code": "R07.4",  "description": "Chest pain on breathing"},
+  {"code": "I25.10", "description": "Atherosclerotic heart disease of native coronary artery without angina pectoris"},
+  {"code": "I21.9",  "description": "Acute myocardial infarction, unspecified"},
+  {"code": "M17.11", "description": "Primary osteoarthritis, right knee"},
+  {"code": "M17.12", "description": "Primary osteoarthritis, left knee"},
+  {"code": "E11.9",  "description": "Type 2 diabetes mellitus without complications"},
+  {"code": "I50.9",  "description": "Heart failure, unspecified"},
+  {"code": "N18.9",  "description": "Chronic kidney disease, unspecified"},
+  {"code": "I10",    "description": "Essential (primary) hypertension"},
+  {"code": "J44.1",  "description": "Chronic obstructive pulmonary disease with acute exacerbation"},
+  {"code": "K80.20", "description": "Calculus of gallbladder without cholecystitis"},
+  {"code": "N20.0",  "description": "Calculus of kidney"},
+  {"code": "G43.909","description": "Migraine, unspecified"},
+  {"code": "R51",    "description": "Headache"},
+  {"code": "M54.5",  "description": "Low back pain"},
+  {"code": "R10.9",  "description": "Unspecified abdominal pain"},
+  {"code": "R05",    "description": "Cough"},
+  {"code": "R06.0",  "description": "Dyspnoea"},
+  {"code": "R55",    "description": "Syncope and collapse"}
+]

@@ -114,3 +114,71 @@ class LoanEngine:
             "critical_risk": "Recommend Alternate Financing",
         }
         return ctas[risk_band]
+
+
+# =============================================================================
+# Module-level DTI Calculation (TC-21 to TC-22)
+# =============================================================================
+
+
+def calculate_dti_band(
+    monthly_income: float,
+    existing_emis: float,
+    loan_amount: float,
+    tenure_months: int = 24,
+    annual_rate: float = 14.0,
+) -> dict:
+    """
+    Calculate DTI band for loan eligibility.
+    
+    Args:
+        monthly_income: Gross monthly income
+        existing_emis: Existing monthly EMI obligations
+        loan_amount: Proposed loan amount
+        tenure_months: Loan tenure (default 24)
+        annual_rate: Annual interest rate (default 14%)
+        
+    Returns:
+        Dict with risk_band, dti, interest_rate_min, cta, etc.
+    """
+    # Calculate EMI using standard formula
+    monthly_rate = annual_rate / (12 * 100)
+    if monthly_rate == 0:
+        emi = loan_amount / tenure_months
+    else:
+        n = tenure_months
+        emi = loan_amount * monthly_rate * ((1 + monthly_rate) ** n) / (((1 + monthly_rate) ** n) - 1)
+    emi = round(emi)
+    
+    # Calculate DTI
+    total_emis = existing_emis + emi
+    dti = (total_emis / monthly_income) * 100 if monthly_income > 0 else 999.0
+    dti = round(dti, 1)
+    
+    # Classify risk band
+    if dti < 30:
+        risk_band = "LOW"
+        rate_range = (12.0, 13.0)
+        cta = "Apply Now"
+    elif dti < 40:
+        risk_band = "MEDIUM"
+        rate_range = (13.0, 15.0)
+        cta = "Standard Application"
+    elif dti < 50:
+        risk_band = "HIGH"
+        rate_range = (15.0, 16.0)
+        cta = "Manual Review"
+    else:
+        risk_band = "CRITICAL"
+        rate_range = (0.0, 0.0)
+        cta = "Recommend Alternate Financing"
+    
+    return {
+        "dti": dti,
+        "risk_band": risk_band,
+        "emi": emi,
+        "loan_amount": loan_amount,
+        "interest_rate_min": rate_range[0],
+        "interest_rate_max": rate_range[1],
+        "cta": cta,
+    }

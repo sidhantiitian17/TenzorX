@@ -136,7 +136,7 @@ async def update_appointment_status(
     Request: {"appointment_id": "appt_001", "status": "confirmed"}
     """
     try:
-        logger.info(f"Updating appointment {update.appointment_id} to status: {update.status}")
+        logger.info("Updating appointment status")
         
         appointment_agent = get_appointment_agent()
         
@@ -153,7 +153,7 @@ async def update_appointment_status(
                 detail=f"Appointment '{update.appointment_id}' not found in session '{session_id}'",
             )
         
-        logger.info(f"Appointment updated successfully: {update.appointment_id}")
+        logger.info("Appointment updated successfully")
         
         return AppointmentUpdateResponse(
             success=True,

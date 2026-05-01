@@ -172,7 +172,7 @@ class AppointmentAgent:
             _appointment_store[session_id] = []
         _appointment_store[session_id].append(appointment)
 
-        logger.info(f"Created appointment {appointment.id} for session {session_id}")
+        logger.info("Created appointment request")
         return appointment
 
     def update_appointment_status(
@@ -198,7 +198,7 @@ class AppointmentAgent:
         for appt in _appointment_store[session_id]:
             if appt.id == appointment_id:
                 appt.status = status
-                logger.info(f"Updated appointment {appointment_id} status to {status}")
+                logger.info("Updated appointment status")
                 return appt
 
         return None

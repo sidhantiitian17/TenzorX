@@ -11,7 +11,7 @@ import type { SearchData, Hospital, CostEstimate, LenderRiskProfile, Message } f
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // Timeout for API requests (in milliseconds)
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 60000;
 
 /**
  * Error thrown when backend API calls fail
@@ -80,16 +80,28 @@ export async function callTriageAPI(
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
+    // Build request body - only include financial_profile if it has valid data
+    const requestBody: Record<string, unknown> = {
+      query: query.trim(),
+    };
+
+    if (patientProfile && Object.keys(patientProfile).length > 0) {
+      requestBody.patient_profile = patientProfile;
+    }
+
+    // Only include financial_profile if it has the required fields
+    if (financialProfile &&
+        typeof financialProfile.gross_monthly_income === 'number' &&
+        financialProfile.gross_monthly_income > 0) {
+      requestBody.financial_profile = financialProfile;
+    }
+
     const response = await fetch(`${API_BASE_URL}/triage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        query: query.trim(),
-        patient_profile: patientProfile,
-        financial_profile: financialProfile,
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
 
@@ -105,15 +117,20 @@ export async function callTriageAPI(
     return await response.json();
   } catch (error) {
     clearTimeout(timeoutId);
-    
+
     if (error instanceof APIError) {
       throw error;
     }
-    
+
+    // Check for AbortController timeout (DOMException with name 'AbortError')
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
-    
+
     throw new APIError(`Failed to call triage API: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -161,15 +178,19 @@ export async function searchHospitalsAPI(request: {
     return await response.json();
   } catch (error) {
     clearTimeout(timeoutId);
-    
+
     if (error instanceof APIError) {
       throw error;
     }
-    
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
-    
+
     throw new APIError(`Failed to search hospitals: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -221,15 +242,19 @@ export async function getHospitalsNearLocationAPI(
     return await response.json();
   } catch (error) {
     clearTimeout(timeoutId);
-    
+
     if (error instanceof APIError) {
       throw error;
     }
-    
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
-    
+
     throw new APIError(`Failed to get nearby hospitals: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -440,6 +465,10 @@ export async function callChatAPI(
       throw error;
     }
 
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
@@ -507,6 +536,10 @@ export async function getSessionAPI(sessionId: string): Promise<{
       throw error;
     }
 
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
@@ -566,6 +599,10 @@ export async function updateAppointmentAPI(
       throw error;
     }
 
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
@@ -618,6 +655,10 @@ export async function calculateEMIAPI(
 
     if (error instanceof APIError) {
       throw error;
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
     }
 
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -676,6 +717,10 @@ export async function submitFeedbackAPI(
       throw error;
     }
 
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
@@ -728,6 +773,10 @@ export async function saveResultAPI(
       throw error;
     }
 
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
+    }
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new APIError('Backend is unreachable. Please ensure the backend server is running.');
     }
@@ -768,6 +817,10 @@ export async function getFormTemplateAPI(formName: string): Promise<Blob> {
 
     if (error instanceof APIError) {
       throw error;
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
     }
 
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -840,6 +893,10 @@ export async function lenderUnderwriteAPI(request: {
 
     if (error instanceof APIError) {
       throw error;
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new APIError('Request timed out. The backend took too long to respond. Please try again.');
     }
 
     if (error instanceof TypeError && error.message.includes('fetch')) {

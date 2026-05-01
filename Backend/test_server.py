@@ -23,7 +23,7 @@ try:
     logger.info(f"✅ Config loaded - API_V1_STR: {settings.API_V1_STR}")
     logger.info(f"   NVIDIA_API_KEY set: {bool(settings.NVIDIA_API_KEY)}")
     if settings.NVIDIA_API_KEY:
-        logger.info(f"   Key prefix: {settings.NVIDIA_API_KEY[:20]}...")
+        logger.info("   NVIDIA_API_KEY is configured (value redacted)")
 except Exception as e:
     logger.error(f"❌ Config import failed: {e}")
     sys.exit(1)

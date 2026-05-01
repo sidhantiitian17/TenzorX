@@ -42,7 +42,7 @@ def check_api_key():
         logger.error("❌ NVIDIA_API_KEY not set properly!")
         logger.error("   Set it in .env file: NVIDIA_API_KEY=nvapi-your-key-here")
         return None
-    logger.info(f"✅ API Key found: {api_key[:20]}...")
+    logger.info("✅ NVIDIA_API_KEY is configured.")
     return api_key
 
 

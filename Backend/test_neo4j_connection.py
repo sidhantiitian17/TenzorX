@@ -221,11 +221,11 @@ def test_ner_pipeline():
         logger.info(f"\n📡 Testing extraction on: '{text}'")
         
         entities = ner.extract(text)
-        logger.info(f"\n--- EXTRACTED ENTITIES ---")
-        logger.info(f"Symptoms: {entities.get('symptoms', [])}")
-        logger.info(f"Procedures: {entities.get('procedures', [])}")
-        logger.info(f"Body parts: {entities.get('body_parts', [])}")
-        logger.info(f"Conditions: {entities.get('conditions', [])}")
+        logger.info(f"\n--- EXTRACTED ENTITIES (SANITIZED) ---")
+        logger.info(f"Symptoms detected: {len(entities.get('symptoms', []))}")
+        logger.info(f"Procedures detected: {len(entities.get('procedures', []))}")
+        logger.info(f"Body parts detected: {len(entities.get('body_parts', []))}")
+        logger.info(f"Conditions detected: {len(entities.get('conditions', []))}")
         
         if entities.get('procedures') or entities.get('symptoms'):
             logger.info("✅ NER extraction successful!")

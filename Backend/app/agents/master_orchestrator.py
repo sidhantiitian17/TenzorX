@@ -97,7 +97,7 @@ class MasterOrchestrator:
         """Initialize the Master Orchestrator with all sub-agents."""
         self.llm = NvidiaClient(temperature=0.15, max_tokens=2048)
         self.severity_classifier = SeverityClassifier()
-        self.graph_rag = GraphRAGEngine()
+        self._graph_rag = None  # Lazy initialization
         self.cost_engine = CostEngine()
         self.geo_engine = GeoPricingEngine()
         self.comorbidity_engine = ComorbidityEngine()
@@ -107,6 +107,17 @@ class MasterOrchestrator:
         self.geo_spatial_agent = GeoSpatialAgent()
         self.xai_explainer = XAIExplainerAgent()
         self.appointment_agent = AppointmentAgent()
+
+    @property
+    def graph_rag(self):
+        """Lazy initialization of GraphRAG engine."""
+        if self._graph_rag is None:
+            try:
+                self._graph_rag = GraphRAGEngine()
+            except Exception as e:
+                logger.warning(f"GraphRAG not available (Neo4j not configured): {e}")
+                self._graph_rag = None
+        return self._graph_rag
 
     def classify_intent(self, query: str) -> str:
         """
@@ -202,12 +213,14 @@ class MasterOrchestrator:
         """Execute NER + Triage Agent."""
         severity = self.severity_classifier.classify(query)
         
-        # GraphRAG for procedure and ICD-10
-        try:
-            rag_result = self.graph_rag.query(query, location, patient_profile)
-        except Exception as e:
-            logger.warning(f"GraphRAG query failed in NER: {e}")
-            rag_result = None
+        # GraphRAG for procedure and ICD-10 (optional - works without Neo4j)
+        rag_result = None
+        if self.graph_rag:
+            try:
+                rag_result = self.graph_rag.query(query, location, patient_profile)
+            except Exception as e:
+                logger.warning(f"GraphRAG query failed in NER: {e}")
+                rag_result = None
         
         # Get city tier
         city_tier = 2
@@ -217,23 +230,33 @@ class MasterOrchestrator:
         # Extract budget from query
         budget_inr = self._extract_budget(query)
         
-        # Handle None result
+        # Handle None result - ensure rag_result is a dict
         if rag_result is None:
             rag_result = {}
+        
+        # Safely extract ICD-10 data
+        icd10_data = rag_result.get("icd10") or {}
+        
+        # Convert city_tier to int if it's a string
+        if isinstance(city_tier, str):
+            tier_map = {"metro": 1, "tier1": 1, "tier2": 2, "tier3": 3}
+            city_tier = tier_map.get(city_tier.lower(), 2)
         
         triage_result = {
             "agent": "ner_triage",
             "canonical_procedure": rag_result.get("procedure", ""),
             "category": rag_result.get("medical_category", ""),
-            "icd10": rag_result.get("icd10", {}),
-            "snomed_ct": rag_result.get("icd10", {}).get("snomed_code", ""),
+            "icd10": icd10_data.get("code", "") if isinstance(icd10_data, dict) else str(icd10_data),
+            "snomed_ct": icd10_data.get("snomed_code", "") if isinstance(icd10_data, dict) else "",
             "city": location,
-            "city_tier": city_tier,
+            "city_tier": int(city_tier) if city_tier else 2,
             "budget_inr": budget_inr,
             "triage": severity,
             "mapping_confidence": rag_result.get("mapping_confidence", 70),
             "extracted_comorbidities": patient_profile.get("comorbidities", []),
         }
+
+        return triage_result
 
     def _extract_budget(self, query: str) -> Optional[int]:
         """Extract budget amount from query."""
@@ -278,15 +301,17 @@ class MasterOrchestrator:
             age=age,
         )
         
-        # Build pathway steps
+        # Build pathway steps (pathway is a list of step dicts)
         pathway_steps = []
-        for i, step in enumerate(pathway.get("steps", []), 1):
+        steps_list = pathway if isinstance(pathway, list) else pathway.get("steps", [])
+        for i, step in enumerate(steps_list, 1):
+            step_dict = step if isinstance(step, dict) else {}
             pathway_steps.append({
                 "step": i,
-                "name": step.get("name", ""),
-                "duration": step.get("duration", ""),
-                "cost_min": step.get("cost_min", 0),
-                "cost_max": step.get("cost_max", 0),
+                "name": step_dict.get("name", "") if isinstance(step_dict, dict) else getattr(step, "name", ""),
+                "duration": step_dict.get("duration", "") if isinstance(step_dict, dict) else getattr(step, "duration", ""),
+                "cost_min": step_dict.get("cost_min", 0) if isinstance(step_dict, dict) else 0,
+                "cost_max": step_dict.get("cost_max", 0) if isinstance(step_dict, dict) else 0,
             })
         
         # Get comorbidity impacts
@@ -319,13 +344,15 @@ class MasterOrchestrator:
         budget_inr: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Execute Hospital Discovery Agent."""
-        # Query GraphRAG for hospitals
-        try:
-            rag_result = self.graph_rag.query(f"{procedure} in {city}", city, {})
-            hospitals_raw = rag_result.get("hospitals_raw", []) if rag_result else []
-        except Exception as e:
-            logger.warning(f"GraphRAG query failed: {e}")
-            hospitals_raw = []
+        # Query GraphRAG for hospitals (optional - works without Neo4j)
+        hospitals_raw = []
+        if self.graph_rag:
+            try:
+                rag_result = self.graph_rag.query(f"{procedure} in {city}", city, {})
+                hospitals_raw = rag_result.get("hospitals_raw", []) if rag_result else []
+            except Exception as e:
+                logger.warning(f"GraphRAG query failed: {e}")
+                hospitals_raw = []
         
         # Score and rank hospitals
         hospitals_scored = self.fusion_engine.score_and_rank(
@@ -505,22 +532,37 @@ class MasterOrchestrator:
             context=context,
         )
         
+        # XAIExplainerOutput is a Pydantic model, not a dict
+        # Access attributes directly
         if result is None:
-            result = {}
+            return {
+                "agent": "xai_explainer",
+                "confidence_score": 70,
+                "confidence_drivers": {
+                    "data_availability": 0,
+                    "pricing_consistency": 0,
+                    "benchmark_recency": 0,
+                    "patient_complexity": 0,
+                },
+                "top_hospital_shap": None,
+                "triage_lime": None,
+                "show_uncertainty_banner": False,
+                "disclaimer": "",
+            }
         
         return {
             "agent": "xai_explainer",
-            "confidence_score": result.get("confidence_score", 70),
+            "confidence_score": result.confidence_score,
             "confidence_drivers": {
-                "data_availability": result.get("confidence_drivers", {}).get("data_availability", 0),
-                "pricing_consistency": result.get("confidence_drivers", {}).get("pricing_consistency", 0),
-                "benchmark_recency": result.get("confidence_drivers", {}).get("benchmark_recency", 0),
-                "patient_complexity": result.get("confidence_drivers", {}).get("patient_complexity", 0),
+                "data_availability": result.confidence_drivers.data_availability,
+                "pricing_consistency": result.confidence_drivers.pricing_consistency,
+                "benchmark_recency": result.confidence_drivers.benchmark_recency,
+                "patient_complexity": result.confidence_drivers.patient_complexity,
             },
-            "top_hospital_shap": result.get("top_hospital_shap", {}).dict() if result.get("top_hospital_shap") else None,
-            "triage_lime": result.get("triage_lime", ""),
-            "show_uncertainty_banner": result.get("show_uncertainty_banner", False),
-            "disclaimer": result.get("disclaimer", ""),
+            "top_hospital_shap": result.top_hospital_shap.dict() if result.top_hospital_shap else None,
+            "triage_lime": result.triage_lime if result.triage_lime else None,
+            "show_uncertainty_banner": result.show_uncertainty_banner,
+            "disclaimer": result.disclaimer or "",
         }
 
     def execute_appointment_paperwork(

@@ -30,17 +30,26 @@ class Neo4jClient:
         self.uri = uri or settings.NEO4J_URI
         self.user = user or settings.NEO4J_USER
         self.password = password or settings.NEO4J_PASSWORD
+        self.driver = None
+        self._disabled = False
         
-        self.driver = GraphDatabase.driver(
-            self.uri,
-            auth=(self.user, self.password),
-        )
-        logger.info(f"Neo4j client initialized: {self.uri}")
+        try:
+            self.driver = GraphDatabase.driver(
+                self.uri,
+                auth=(self.user, self.password),
+            )
+            # Test connection
+            self.driver.verify_connectivity()
+            logger.info(f"Neo4j client initialized: {self.uri}")
+        except Exception as e:
+            logger.warning(f"Neo4j connection failed (graph features disabled): {e}")
+            self._disabled = True
 
     def close(self):
         """Close the Neo4j driver connection."""
-        self.driver.close()
-        logger.info("Neo4j connection closed")
+        if self.driver:
+            self.driver.close()
+            logger.info("Neo4j connection closed")
 
     def run_query(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
@@ -52,7 +61,13 @@ class Neo4jClient:
             
         Returns:
             List of record dictionaries
+            
+        Raises:
+            RuntimeError: If Neo4j is disabled or not connected
         """
+        if self._disabled or self.driver is None:
+            raise RuntimeError("Neo4j is not available - graph queries disabled")
+        
         params = params or {}
         with self.driver.session() as session:
             result = session.run(cypher, **params)

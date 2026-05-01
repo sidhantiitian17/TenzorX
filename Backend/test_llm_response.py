@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Test script to verify Mistral Large 3 LLM is responding properly.
+"""Test script to verify Longcat AI LLM is responding properly.
 
 USAGE OPTIONS:
 1. Run default tests:                    python test_llm_response.py
@@ -36,13 +36,13 @@ logger = logging.getLogger(__name__)
 
 
 def check_api_key():
-    """Check if NVIDIA API key is configured."""
-    api_key = os.getenv("NVIDIA_API_KEY", "")
-    if not api_key or api_key == "nvapi-your-nvidia-api-key-here":
-        logger.error("❌ NVIDIA_API_KEY not set properly!")
-        logger.error("   Set it in .env file: NVIDIA_API_KEY=nvapi-your-key-here")
+    """Check if Longcat AI API key is configured."""
+    api_key = os.getenv("LONGCAT_API_KEY", "")
+    if not api_key:
+        logger.error("❌ LONGCAT_API_KEY not set properly!")
+        logger.error("   Set it in .env file: LONGCAT_API_KEY=your-key-here")
         return None
-    logger.info("✅ NVIDIA_API_KEY is configured.")
+    logger.info("✅ LONGCAT_API_KEY is configured.")
     return api_key
 
 
@@ -96,7 +96,7 @@ def test_custom_prompt(client, prompt=None, system=None, location=None):
         traceback.print_exc()
         
         # Fallback to direct LLM test
-        logger.info("\n📡 Falling back to direct NvidiaClient test...")
+        logger.info("\n📡 Falling back to direct LLMClient test...")
         try:
             response = client.simple_prompt(
                 prompt=prompt,
@@ -125,7 +125,7 @@ def run_default_tests(client):
     try:
         logger.info("\n🧪 Test 1: Simple greeting prompt")
         response1 = client.simple_prompt(
-            "Say hello and confirm you are Mistral Large 3 model."
+            "Say hello and introduce yourself as an AI healthcare navigator."
         )
         logger.info(f"✅ Response: {response1[:150]}...")
         tests_passed += 1
@@ -207,7 +207,7 @@ def interactive_mode(client):
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Test Mistral Large 3 LLM via NVIDIA API',
+        description='Test Longcat AI LLM via OpenAI-compatible API',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
@@ -231,15 +231,14 @@ Examples:
     
     # Initialize client
     try:
-        from app.core.nvidia_client import NvidiaClient
-        client = NvidiaClient(
-            model="mistralai/mistral-large-3-675b-instruct-2512",
+        from app.core.nvidia_client import LLMClient
+        client = LLMClient(
             temperature=0.15,
             max_tokens=1024
         )
-        logger.info(f"✅ NvidiaClient initialized with model: {client.model}")
+        logger.info(f"✅ LLMClient initialized with model: {client.model}")
     except Exception as e:
-        logger.error(f"❌ Failed to initialize NvidiaClient: {e}")
+        logger.error(f"❌ Failed to initialize LLMClient: {e}")
         return False
     
     # Interactive mode

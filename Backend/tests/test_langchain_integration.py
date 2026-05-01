@@ -1,8 +1,8 @@
 """
-Integration tests for direct NVIDIA API LLM orchestration.
+Integration tests for direct Longcat AI LLM orchestration.
 
 These tests validate that:
-1. The NVIDIA API is being called when patient queries are processed
+1. The Longcat AI API is being called when patient queries are processed
 2. Error handling works correctly for API failures
 3. Session memory remains isolated between patients
 4. The mandatory medical disclaimer is included in responses
@@ -20,13 +20,13 @@ from app.services.langchain_agent import (
     process_patient_query,
     get_session_history,
     store,
-    _call_nvidia_api,
+    _call_longcat_api,
     _format_context,
     MANDATORY_MEDICAL_DISCLAIMER,
-    NVIDIA_INVOKE_URL,
-    NVIDIA_MODEL,
+    LONGCAT_INVOKE_URL,
+    LONGCAT_MODEL,
     _build_llm,
-    NVIDIA_API_KEY_ENV,
+    LONGCAT_API_KEY_ENV,
 )
 from app.core.config import settings
 
@@ -34,8 +34,8 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-class TestDirectNVIDIALLMIntegration:
-    """Test suite for direct NVIDIA API integration."""
+class TestDirectLongcatAIIntegration:
+    """Test suite for direct Longcat AI API integration."""
 
     def setup_method(self):
         """Clear session store before each test."""
@@ -60,8 +60,8 @@ class TestDirectNVIDIALLMIntegration:
             )
 
     @patch("app.services.langchain_agent.requests.post")
-    def test_nvidia_api_called_with_correct_params(self, mock_post):
-        """Test that the NVIDIA API is called with correct parameters."""
+    def test_longcat_api_called_with_correct_params(self, mock_post):
+        """Test that the Longcat AI API is called with correct parameters."""
         # Mock successful API response
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
@@ -72,24 +72,24 @@ class TestDirectNVIDIALLMIntegration:
 
         # Call the API function
         messages = [{"role": "user", "content": "Test message"}]
-        result = _call_nvidia_api(messages, "test-session")
+        result = _call_longcat_api(messages, "test-session")
 
         # Verify requests.post was called correctly
         mock_post.assert_called_once()
         call_args, call_kwargs = mock_post.call_args
 
         # Check URL
-        assert call_args[0] == NVIDIA_INVOKE_URL
+        assert call_args[0] == LONGCAT_INVOKE_URL
 
         # Check headers
         headers = call_kwargs["headers"]
-        assert headers["Authorization"] == f"Bearer {settings.NVIDIA_API_KEY}"
+        assert headers["Authorization"] == f"Bearer {settings.LONGCAT_API_KEY}"
         assert headers["Accept"] == "application/json"
         assert headers["Content-Type"] == "application/json"
 
         # Check payload
         payload = call_kwargs["json"]
-        assert payload["model"] == NVIDIA_MODEL
+        assert payload["model"] == LONGCAT_MODEL
         assert payload["messages"] == messages
         assert payload["max_tokens"] == 2048
         assert payload["temperature"] == 0.15
@@ -105,8 +105,8 @@ class TestDirectNVIDIALLMIntegration:
         assert result == "Test response"
 
     @patch("app.services.langchain_agent.requests.post")
-    def test_process_query_calls_nvidia_api(self, mock_post):
-        """Test that process_patient_query calls the NVIDIA API."""
+    def test_process_query_calls_longcat_api(self, mock_post):
+        """Test that process_patient_query calls the Longcat AI API."""
         # Mock successful API response
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
@@ -133,7 +133,7 @@ class TestDirectNVIDIALLMIntegration:
         mock_post.side_effect = Exception("Request timeout")
 
         with pytest.raises(RuntimeError, match="timeout|exceeded"):
-            _call_nvidia_api([{"role": "user", "content": "test"}], "test-session")
+            _call_longcat_api([{"role": "user", "content": "test"}], "test-session")
 
     @patch("app.services.langchain_agent.requests.post")
     def test_connection_error_handling(self, mock_post):
@@ -141,7 +141,7 @@ class TestDirectNVIDIALLMIntegration:
         mock_post.side_effect = Exception("Failed to connect")
 
         with pytest.raises(RuntimeError, match="connect|connection"):
-            _call_nvidia_api([{"role": "user", "content": "test"}], "test-session")
+            _call_longcat_api([{"role": "user", "content": "test"}], "test-session")
 
     @patch("app.services.langchain_agent.requests.post")
     def test_auth_error_handling(self, mock_post):
@@ -151,7 +151,7 @@ class TestDirectNVIDIALLMIntegration:
         mock_post.return_value = mock_response
 
         with pytest.raises(RuntimeError, match="authentication|Unauthorized"):
-            _call_nvidia_api([{"role": "user", "content": "test"}], "test-session")
+            _call_longcat_api([{"role": "user", "content": "test"}], "test-session")
 
     @patch("app.services.langchain_agent.requests.post")
     def test_rate_limit_error_handling(self, mock_post):
@@ -161,7 +161,7 @@ class TestDirectNVIDIALLMIntegration:
         mock_post.return_value = mock_response
 
         with pytest.raises(RuntimeError, match="Rate limit exceeded"):
-            _call_nvidia_api([{"role": "user", "content": "test"}], "test-session")
+            _call_longcat_api([{"role": "user", "content": "test"}], "test-session")
 
     @patch("app.services.langchain_agent.requests.post")
     def test_empty_response_error_handling(self, mock_post):
@@ -172,7 +172,7 @@ class TestDirectNVIDIALLMIntegration:
         mock_post.return_value = mock_response
 
         with pytest.raises(RuntimeError, match="empty response"):
-            _call_nvidia_api([{"role": "user", "content": "test"}], "test-session")
+            _call_longcat_api([{"role": "user", "content": "test"}], "test-session")
 
     @patch("app.services.langchain_agent.logger")
     @patch("app.services.langchain_agent.requests.post")
@@ -184,13 +184,13 @@ class TestDirectNVIDIALLMIntegration:
         mock_response.json.return_value = {"choices": [{"message": {"content": "Response"}}]}
         mock_post.return_value = mock_response
 
-        _call_nvidia_api([{"role": "user", "content": "test"}], "test-session")
+        _call_longcat_api([{"role": "user", "content": "test"}], "test-session")
 
         # Verify that info logs were called
         assert mock_logger.info.called
         calls = [str(call) for call in mock_logger.info.call_args_list]
         logged_text = " ".join(calls)
-        assert "Calling NVIDIA API" in logged_text
+        assert "Calling Longcat AI API" in logged_text
         assert "successfully returned" in logged_text
 
 
@@ -259,7 +259,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_timeout_error_handling(self, mock_runnable_history):
         """Test that timeout errors are caught and re-raised gracefully."""
-        os.environ["NVIDIA_API_KEY"] = "test-api-key"
+        os.environ["LONGCAT_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_runnable_history_instance = MagicMock()
@@ -281,12 +281,12 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_connection_error_handling(self, mock_runnable_history):
         """Test that connection errors are caught and re-raised gracefully."""
-        os.environ["NVIDIA_API_KEY"] = "test-api-key"
+        os.environ["LONGCAT_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_runnable_history_instance = MagicMock()
         mock_runnable_history_instance.invoke.side_effect = ConnectionError(
-            "Failed to connect to NVIDIA API"
+            "Failed to connect to Longcat AI API"
         )
 
         try:
@@ -305,7 +305,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_auth_error_handling(self, mock_runnable_history):
         """Test that 401 auth errors are identified and reported clearly."""
-        os.environ["NVIDIA_API_KEY"] = "test-api-key"
+        os.environ["LONGCAT_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_runnable_history_instance = MagicMock()
@@ -329,7 +329,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_rate_limit_error_handling(self, mock_runnable_history):
         """Test that 429 rate limit errors are identified and reported."""
-        os.environ[NVIDIA_API_KEY_ENV] = "test-api-key"
+        os.environ[LONGCAT_API_KEY_ENV] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_runnable_history_instance = MagicMock()
@@ -353,7 +353,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_empty_response_error_handling(self, mock_runnable_history):
         """Test that empty LLM responses are caught."""
-        os.environ["NVIDIA_API_KEY"] = "test-api-key"
+        os.environ["LONGCAT_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_response = MagicMock()
@@ -378,7 +378,7 @@ class TestContextFormatting:
     @patch("app.services.langchain_agent.RunnableWithMessageHistory")
     def test_llm_call_logging(self, mock_runnable_history, mock_logger):
         """Test that LLM calls and responses are logged."""
-        os.environ["NVIDIA_API_KEY"] = "test-api-key"
+        os.environ["LONGCAT_API_KEY"] = "test-api-key"
         _build_llm.cache_clear()
 
         mock_response = MagicMock()

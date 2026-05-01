@@ -21,9 +21,9 @@ logger.info("=" * 60)
 try:
     from app.core.config import settings
     logger.info(f"✅ Config loaded - API_V1_STR: {settings.API_V1_STR}")
-    logger.info(f"   NVIDIA_API_KEY set: {bool(settings.NVIDIA_API_KEY)}")
-    if settings.NVIDIA_API_KEY:
-        logger.info("   NVIDIA_API_KEY is configured (value redacted)")
+    logger.info(f"   LONGCAT_API_KEY set: {bool(settings.LONGCAT_API_KEY)}")
+    if settings.LONGCAT_API_KEY:
+        logger.info("   LONGCAT_API_KEY is configured (value redacted)")
 except Exception as e:
     logger.error(f"❌ Config import failed: {e}")
     sys.exit(1)
@@ -51,9 +51,9 @@ logger.info("=" * 60)
 logger.info("Test 4: Processing test message")
 logger.info("=" * 60)
 
-if not settings.NVIDIA_API_KEY or "your" in settings.NVIDIA_API_KEY.lower():
-    logger.warning("⚠️  NVIDIA_API_KEY not set in environment!")
-    logger.warning("   Set it with: $env:NVIDIA_API_KEY='nvapi-your-key-here'")
+if not settings.LONGCAT_API_KEY or "your" in settings.LONGCAT_API_KEY.lower():
+    logger.warning("⚠️  LONGCAT_API_KEY not set in environment!")
+    logger.warning("   Set it with: $env:LONGCAT_API_KEY='your-api-key-here'")
     logger.info("\n   Continuing with mock test...")
 else:
     logger.info("🌐 Calling LLM with test message...")

@@ -22,10 +22,10 @@ from app.knowledge_graph.neo4j_client import Neo4jClient
 from app.core.nvidia_client import NvidiaClient
 
 
-# Skip if Neo4j or NVIDIA API not available
+# Skip if Neo4j or LLM API not available
 pytestmark = pytest.mark.skipif(
-    not os.getenv("NEO4J_URI") or not os.getenv("NVIDIA_API_KEY"),
-    reason="Neo4j or NVIDIA API not configured"
+    not os.getenv("NEO4J_URI") or not os.getenv("LONGCAT_API_KEY"),
+    reason="Neo4j or Longcat AI API not configured"
 )
 
 

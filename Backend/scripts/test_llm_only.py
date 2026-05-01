@@ -12,16 +12,18 @@ sys.path.insert(0, str(BACKEND_DIR))
 from dotenv import load_dotenv
 load_dotenv(BACKEND_DIR / ".env")
 
-from app.core.nvidia_client import NvidiaClient
+from app.core.nvidia_client import LLMClient
 from app.core.config import settings
 
 print("="*60)
 print("LLM SYNTHESIS TEST")
 print("="*60)
-print(f"NVIDIA_API_KEY: {'[SET]' if settings.NVIDIA_API_KEY else '[NOT SET]'}")
+print(f"LONGCAT_API_KEY: {'[SET]' if settings.LONGCAT_API_KEY else '[NOT SET]'}")
+print(f"LONGCAT_BASE_URL: {settings.LONGCAT_BASE_URL}")
+print(f"Model: LongCat-Flash-Lite")
 print()
 
-llm = NvidiaClient(temperature=0.15, max_tokens=1024)
+llm = LLMClient(temperature=0.15, max_tokens=1024)
 
 graph_context = """
 {
@@ -66,7 +68,7 @@ Knowledge Graph Context:
 Provide a helpful response with cost breakdown and hospital recommendations.
 """
 
-print("Sending request to NVIDIA LLM...")
+print("Sending request to Longcat AI LLM...")
 print()
 
 try:

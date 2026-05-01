@@ -103,6 +103,27 @@ class ComorbidityEngine:
 
         return {**cost_estimate, **adjusted}
 
+    def get_impact(self, condition: str) -> Optional[Dict[str, Any]]:
+        """Get impact details for a comorbidity condition.
+        
+        Args:
+            condition: Comorbidity name
+            
+        Returns:
+            Dict with impact details or None if not found
+        """
+        condition_lower = condition.lower().strip().replace(" ", "_")
+        if condition_lower in self.COMORBIDITY_WEIGHTS:
+            w = self.COMORBIDITY_WEIGHTS[condition_lower]
+            return {
+                "condition": condition,
+                "weight": w["weight"],
+                "min_add": int(w["weight"] * 10000),  # Estimated cost addition
+                "max_add": int(w["weight"] * 30000),
+                "impact": self._impact_label(w["weight"]),
+            }
+        return None
+
     def _impact_label(self, weight: float) -> str:
         """Get human-readable impact label for a weight."""
         if weight >= 0.40:

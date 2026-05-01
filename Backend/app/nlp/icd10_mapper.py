@@ -36,23 +36,27 @@ class ICD10Mapper:
 
     def _load_data(self, data_path: str):
         """Load ICD-10 data from JSON file."""
-        path = Path(data_path)
+        # Get the directory of this file (icd10_mapper.py)
+        module_dir = Path(__file__).parent.resolve()
+        backend_dir = module_dir.parent.parent  # app/nlp -> app -> Backend
         
-        if not path.exists():
-            logger.warning(f"ICD-10 data file not found: {data_path}")
-            # Try alternative paths
-            alt_paths = [
-                Path("Backend") / data_path,
-                Path("..") / data_path,
-                Path(os.getcwd()) / data_path,
-            ]
-            for alt in alt_paths:
-                if alt.exists():
-                    path = alt
-                    break
+        # Try multiple path strategies
+        paths_to_try = [
+            Path(data_path),  # As provided
+            backend_dir / data_path,  # Relative to Backend dir
+            module_dir / data_path,  # Relative to module dir
+            Path(os.getcwd()) / data_path,  # Relative to cwd
+            Path(os.getcwd()) / "Backend" / data_path,  # Backend subdir from cwd
+        ]
         
-        if not path.exists():
-            logger.error(f"ICD-10 data file not found in any location")
+        path = None
+        for p in paths_to_try:
+            if p.exists():
+                path = p
+                break
+        
+        if path is None:
+            logger.error(f"ICD-10 data file not found. Tried: {[str(p) for p in paths_to_try]}")
             return
 
         try:
@@ -221,11 +225,19 @@ class ICD10Mapper:
 
 _icd10_index: Optional[dict] = None  # lazy-loaded singleton
 
+# Get module directory for reliable path resolution
+_MODULE_DIR = Path(__file__).parent.resolve()
+_BACKEND_DIR = _MODULE_DIR.parent.parent
+
 SEARCH_PATHS = [
-    "data/icd10_2022.json",
-    "data/icd10_fallback.json",
-    os.path.join(os.path.dirname(__file__), "..", "..", "data", "icd10_2022.json"),
-    os.path.join(os.path.dirname(__file__), "..", "..", "data", "icd10_fallback.json"),
+    _BACKEND_DIR / "data" / "icd10_2022.json",
+    _BACKEND_DIR / "data" / "icd10_fallback.json",
+    _MODULE_DIR / "data" / "icd10_2022.json",
+    _MODULE_DIR / "data" / "icd10_fallback.json",
+    Path("data/icd10_2022.json"),
+    Path("data/icd10_fallback.json"),
+    Path("Backend/data/icd10_2022.json"),
+    Path("Backend/data/icd10_fallback.json"),
 ]
 
 
@@ -273,7 +285,7 @@ def load_icd10() -> dict:
         return _icd10_index
 
     for path in SEARCH_PATHS:
-        if os.path.exists(path):
+        if path.exists():
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     raw = json.load(f)

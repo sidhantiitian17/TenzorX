@@ -30,14 +30,17 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     
     # ============================================================================
-    # NVIDIA API Configuration
+    # Longcat AI API Configuration
     # ============================================================================
-    NVIDIA_API_KEY: str = ""
+    LONGCAT_API_KEY: str = ""
     """
-    NVIDIA API key for Mistral Large 3 LLM integration.
+    Longcat AI API key for LLM integration.
     Required for AI-powered medical guidance.
-    Get from: https://integrate.api.nvidia.com/
+    Get from: https://api.longcat.chat/
     """
+    
+    LONGCAT_BASE_URL: str = "https://api.longcat.chat/openai"
+    """Longcat AI API base URL for OpenAI-compatible endpoint."""
     
     OPENAI_API_KEY: str = ""
     """

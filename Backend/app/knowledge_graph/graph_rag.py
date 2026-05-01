@@ -77,8 +77,12 @@ class GraphRAGEngine:
         # Step 3: Graph Traversal - Disease and Procedure discovery
         diseases = []
         if symptoms:
-            diseases = self.neo4j.find_diseases_for_symptoms(symptoms)
-            logger.info(f"Found {len(diseases)} diseases for symptoms")
+            try:
+                diseases = self.neo4j.find_diseases_for_symptoms(symptoms)
+                logger.info(f"Found {len(diseases)} diseases for symptoms")
+            except RuntimeError as e:
+                logger.warning(f"Neo4j query failed: {e}")
+                diseases = []
 
         # Step 4: Determine primary disease and procedure
         primary_icd10: Optional[Dict[str, str]] = None
@@ -117,42 +121,68 @@ class GraphRAGEngine:
         # Step 5: Get cost breakdown with phase-based components
         cost_adjustments = None
         if primary_procedure:
-            cost_breakdown = self.neo4j.get_cost_breakdown(primary_procedure)
+            try:
+                cost_breakdown = self.neo4j.get_cost_breakdown(primary_procedure)
+            except RuntimeError as e:
+                logger.warning(f"Neo4j cost query failed: {e}")
+                cost_breakdown = []
             
             # Calculate total base cost from components
             base_min = sum(c["cost_min"] for c in cost_breakdown)
             base_max = sum(c["cost_max"] for c in cost_breakdown)
             
             # Step 6: Apply cost adjustments per instruction_KG.md Sections 10-11
-            cost_adjustments = self.neo4j.apply_cost_adjustments(
-                base_cost_min=base_min,
-                base_cost_max=base_max,
-                city_name=location,
-                comorbidity_names=comorbidities,
-                patient_age=patient_age
-            )
-            logger.info(f"Cost: ₹{cost_adjustments['final_cost_min']:,.0f} - ₹{cost_adjustments['final_cost_max']:,.0f}")
+            try:
+                cost_adjustments = self.neo4j.apply_cost_adjustments(
+                    base_cost_min=base_min,
+                    base_cost_max=base_max,
+                    city_name=location,
+                    comorbidity_names=comorbidities,
+                    patient_age=patient_age
+                )
+            except RuntimeError as e:
+                logger.warning(f"Neo4j cost adjustment failed: {e}")
+                cost_adjustments = None
+            if cost_adjustments:
+                logger.info(f"Cost: ₹{cost_adjustments['final_cost_min']:,.0f} - ₹{cost_adjustments['final_cost_max']:,.0f}")
 
         # Step 7: Hospital discovery with fusion score ranking
         hospitals_raw: List[Dict[str, Any]] = []
         enriched_hospitals: List[Dict[str, Any]] = []
         
         if primary_procedure and location:
-            hospitals_raw = self.neo4j.find_hospitals_for_procedure_in_city(
-                primary_procedure, location, limit=5
-            )
+            try:
+                hospitals_raw = self.neo4j.find_hospitals_for_procedure_in_city(
+                    primary_procedure, location, limit=5
+                )
+            except RuntimeError as e:
+                logger.warning(f"Neo4j hospital query failed: {e}")
+                hospitals_raw = []
             logger.info(f"Found {len(hospitals_raw)} hospitals for {primary_procedure} in {location}")
             
             # Step 8: Add availability proxy for each hospital
             for hospital in hospitals_raw:
-                hosp_id = hospital["id"]
+                hosp_id = hospital.get("id", "")
+                if not hosp_id:
+                    continue
                 
                 # Compute availability per instruction_KG.md Section 13
-                availability = self.availability_proxy.compute_availability(
-                    hosp_id, 
-                    department=primary_icd10.get("category") if primary_icd10 else None,
-                    is_emergency=is_emergency
-                )
+                try:
+                    availability = self.availability_proxy.compute_availability(
+                        hosp_id, 
+                        department=primary_icd10.get("category") if primary_icd10 else None,
+                        is_emergency=is_emergency
+                    )
+                except Exception as e:
+                    logger.warning(f"Availability proxy failed for {hosp_id}: {e}")
+                    # Create default availability
+                    from app.knowledge_graph.availability_proxy import AvailabilityResult
+                    availability = AvailabilityResult(
+                        label="Standard Wait",
+                        score=0.5,
+                        estimated_days=3,
+                        has_emergency=False,
+                    )
                 
                 # If emergency, only show hospitals with emergency units
                 if is_emergency and not availability.has_emergency:

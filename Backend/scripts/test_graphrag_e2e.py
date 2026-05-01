@@ -17,7 +17,7 @@ print("="*70)
 print("END-TO-END GRAPHRAG PIPELINE TEST")
 print("="*70)
 print(f"Neo4j URI: {settings.NEO4J_URI}")
-print(f"NVIDIA_API_KEY: {'[SET]' if settings.NVIDIA_API_KEY else '[NOT SET]'}")
+print(f"LONGCAT_API_KEY: {'[SET]' if settings.LONGCAT_API_KEY else '[NOT SET]'}")
 print()
 
 try:

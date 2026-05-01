@@ -1,7 +1,7 @@
 """
-Direct NVIDIA API orchestration for patient triage.
+Direct Longcat AI API orchestration for patient triage.
 
-This module uses direct HTTP requests to the NVIDIA Mistral Large 3 model
+This module uses direct HTTP requests to the Longcat AI model
 with session-isolated message history so each patient's conversation remains independent.
 Includes comprehensive error handling for API failures and detailed logging.
 """
@@ -26,10 +26,10 @@ MANDATORY_MEDICAL_DISCLAIMER = (
     "This system provides decision support only and does not constitute medical advice or diagnosis"
 )
 
-NVIDIA_INVOKE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-NVIDIA_MODEL = "mistralai/mistral-large-3-675b-instruct-2512"
-NVIDIA_API_KEY = settings.NVIDIA_API_KEY
-NVIDIA_API_KEY_ENV = "NVIDIA_API_KEY"
+LONGCAT_INVOKE_URL = f"{settings.LONGCAT_BASE_URL}/v1/chat/completions"
+LONGCAT_MODEL = "LongCat-Flash-Lite"
+LONGCAT_API_KEY = settings.LONGCAT_API_KEY
+LONGCAT_API_KEY_ENV = "LONGCAT_API_KEY"
 
 store: dict[str, InMemoryChatMessageHistory] = {}
 
@@ -99,8 +99,8 @@ def _build_prompt() -> ChatPromptTemplate:
     )
 
 
-def _call_nvidia_api(messages: list[dict[str, str]], session_id: str) -> str:
-    """Make direct API call to NVIDIA Mistral Large 3 model.
+def _call_longcat_api(messages: list[dict[str, str]], session_id: str) -> str:
+    """Make direct API call to Longcat AI model.
 
     Args:
         messages: List of message dictionaries with 'role' and 'content'
@@ -114,13 +114,13 @@ def _call_nvidia_api(messages: list[dict[str, str]], session_id: str) -> str:
     """
 
     headers = {
-        "Authorization": f"Bearer {NVIDIA_API_KEY}",
+        "Authorization": f"Bearer {LONGCAT_API_KEY}",
         "Accept": "application/json",
         "Content-Type": "application/json"
     }
 
     payload = {
-        "model": NVIDIA_MODEL,
+        "model": LONGCAT_MODEL,
         "messages": messages,
         "max_tokens": 2048,
         "temperature": 0.15,
@@ -131,9 +131,9 @@ def _call_nvidia_api(messages: list[dict[str, str]], session_id: str) -> str:
     }
 
     try:
-        logger.info(f"🚀 Calling NVIDIA API for session_id={session_id}")
+        logger.info(f"🚀 Calling Longcat AI API for session_id={session_id}")
         response = requests.post(
-            NVIDIA_INVOKE_URL,
+            LONGCAT_INVOKE_URL,
             headers=headers,
             json=payload,
             timeout=30.0
@@ -146,43 +146,43 @@ def _call_nvidia_api(messages: list[dict[str, str]], session_id: str) -> str:
         content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
 
         if not content:
-            error_msg = "NVIDIA API returned empty response content"
+            error_msg = "Longcat AI API returned empty response content"
             logger.warning(error_msg)
             raise RuntimeError(error_msg)
 
-        logger.info(f"✅ NVIDIA API successfully returned response for session_id={session_id}")
+        logger.info(f"✅ Longcat AI API successfully returned response for session_id={session_id}")
         return content.strip()
 
     except requests.exceptions.Timeout:
-        error_msg = f"NVIDIA API timeout (30s exceeded) for session_id={session_id}"
+        error_msg = f"Longcat AI API timeout (30s exceeded) for session_id={session_id}"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
 
     except requests.exceptions.ConnectionError as exc:
-        error_msg = f"Failed to connect to NVIDIA API endpoint: {NVIDIA_INVOKE_URL}"
+        error_msg = f"Failed to connect to Longcat AI API endpoint: {LONGCAT_INVOKE_URL}"
         logger.error(error_msg, exc_info=True)
         raise RuntimeError(error_msg) from exc
 
     except requests.exceptions.HTTPError as exc:
         status_code = response.status_code if 'response' in locals() else 'unknown'
         if status_code == 401:
-            error_msg = "NVIDIA API authentication failed: Invalid API key"
+            error_msg = "Longcat AI API authentication failed: Invalid API key"
             logger.error(error_msg)
         elif status_code == 429:
-            error_msg = "NVIDIA API rate limit exceeded. Please retry later."
+            error_msg = "Longcat AI API rate limit exceeded. Please retry later."
             logger.error(error_msg)
         else:
-            error_msg = f"NVIDIA API HTTP error {status_code}: {response.text if 'response' in locals() else 'Unknown error'}"
+            error_msg = f"Longcat AI API HTTP error {status_code}: {response.text if 'response' in locals() else 'Unknown error'}"
             logger.error(error_msg, exc_info=True)
         raise RuntimeError(error_msg) from exc
 
     except json.JSONDecodeError as exc:
-        error_msg = "NVIDIA API returned invalid JSON response"
+        error_msg = "Longcat AI API returned invalid JSON response"
         logger.error(error_msg, exc_info=True)
         raise RuntimeError(error_msg) from exc
 
     except Exception as exc:
-        error_msg = f"NVIDIA API call failed: {str(exc)}"
+        error_msg = f"Longcat AI API call failed: {str(exc)}"
         logger.error(error_msg, exc_info=True)
         raise RuntimeError(error_msg) from exc
 
@@ -203,7 +203,7 @@ def _build_llm():
     with an `invoke` attribute satisfies tests that interact with
     `RunnableWithMessageHistory` substitutes.
     """
-    api_key = os.environ.get(NVIDIA_API_KEY_ENV, NVIDIA_API_KEY)
+    api_key = os.environ.get(LONGCAT_API_KEY_ENV, LONGCAT_API_KEY)
 
     class _LLMPlaceholder:
         def __init__(self, key: str):
@@ -216,10 +216,10 @@ def _build_llm():
 
 
 def process_patient_query(session_id: str, query: str, context: dict[str, Any]) -> str:
-    """Process a patient query with isolated session memory using direct NVIDIA API calls.
+    """Process a patient query with isolated session memory using direct Longcat AI API calls.
 
     This function maintains conversation history per session and formats messages
-    for the NVIDIA Mistral Large 3 model using the provided context.
+    for the Longcat AI model using the provided context.
 
     Args:
         session_id: Unique patient session identifier
@@ -231,7 +231,7 @@ def process_patient_query(session_id: str, query: str, context: dict[str, Any]) 
 
     Raises:
         ValueError: If session_id or query are empty
-        RuntimeError: If NVIDIA API is unreachable or processing fails
+        RuntimeError: If Longcat AI API is unreachable or processing fails
     """
 
     normalized_session_id = session_id.strip()
@@ -277,8 +277,8 @@ def process_patient_query(session_id: str, query: str, context: dict[str, Any]) 
     messages.append({"role": "user", "content": user_content})
 
     try:
-        # Call NVIDIA API directly
-        response_text = _call_nvidia_api(messages, normalized_session_id)
+        # Call Longcat AI API directly
+        response_text = _call_longcat_api(messages, normalized_session_id)
 
         # Add the user message and AI response to session history
         from langchain_core.messages import HumanMessage, AIMessage

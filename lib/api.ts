@@ -476,6 +476,9 @@ export async function callChatAPI(
     cost_estimate?: {
       total_cost_range: { min: number; max: number };
       components?: Record<string, { min: number; max: number }>;
+      cost_breakdown_items?: Array<{ label: string; min: number; max: number }>;
+      cost_source?: string;
+      geo_multiplier?: number;
     };
     hospitals?: {
       agent: string;

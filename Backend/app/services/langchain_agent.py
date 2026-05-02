@@ -130,13 +130,20 @@ def _call_longcat_api(messages: list[dict[str, str]], session_id: str) -> str:
         "stream": False
     }
 
+    # Check if API key is configured
+    if not LONGCAT_API_KEY or LONGCAT_API_KEY == "your-longcat-api-key-here":
+        error_msg = "Longcat AI API key not configured - LLM features unavailable"
+        logger.warning(error_msg)
+        raise RuntimeError(error_msg)
+
     try:
         logger.info(f"🚀 Calling Longcat AI API for session_id={session_id}")
+        # Use connection timeout to fail fast on DNS/SSL issues
         response = requests.post(
             LONGCAT_INVOKE_URL,
             headers=headers,
             json=payload,
-            timeout=120.0
+            timeout=(0.5, 1)  # (connect timeout, read timeout) - aggressive for <10s total
         )
 
         # Check for HTTP errors
@@ -154,7 +161,7 @@ def _call_longcat_api(messages: list[dict[str, str]], session_id: str) -> str:
         return content.strip()
 
     except requests.exceptions.Timeout:
-        error_msg = f"Longcat AI API timeout (120s exceeded) for session_id={session_id}"
+        error_msg = f"Longcat AI API timeout (3s exceeded) for session_id={session_id}"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
 

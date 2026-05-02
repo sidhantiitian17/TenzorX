@@ -156,6 +156,45 @@ export default function HomePage() {
           cost_range: chatResponse.results_panel?.cost_estimate?.total_cost_range || chatResponse.cost_estimate?.total || { min: 50000, max: 200000 },
           confidence: (chatResponse.chat_response.confidence_score || 75) / 100,
           cost_breakdown: (() => {
+            // Try cost_breakdown_items array first (new backend format)
+            const breakdownItems = chatResponse.results_panel?.cost_estimate?.cost_breakdown_items;
+            if (breakdownItems && Array.isArray(breakdownItems) && breakdownItems.length > 0) {
+              // Map label to component key
+              const labelMap: Record<string, string> = {
+                'Procedure / Surgery': 'procedure',
+                'Doctor Fees': 'doctor_fees',
+                'Hospital Stay': 'hospital_stay',
+                'Diagnostics': 'diagnostics',
+                'Medicines': 'medicines',
+                'Contingency': 'contingency',
+              };
+
+              // Initialize with zeros
+              const breakdown: import('@/types').CostBreakdown = {
+                procedure: { min: 0, max: 0 },
+                doctor_fees: { min: 0, max: 0 },
+                hospital_stay: { min: 0, max: 0, nights: '1-2' },
+                diagnostics: { min: 0, max: 0 },
+                medicines: { min: 0, max: 0 },
+                contingency: { min: 0, max: 0 },
+              };
+
+              // Map items from array to object
+              breakdownItems.forEach((item) => {
+                const key = labelMap[item.label];
+                if (key) {
+                  breakdown[key as keyof typeof breakdown] = {
+                    min: item.min,
+                    max: item.max,
+                    ...(key === 'hospital_stay' && { nights: '1-2' }),
+                  };
+                }
+              });
+
+              return breakdown;
+            }
+
+            // Fall back to components object (old format)
             const components = chatResponse.results_panel?.cost_estimate?.components || chatResponse.cost_estimate?.components;
             if (!components) {
               return {

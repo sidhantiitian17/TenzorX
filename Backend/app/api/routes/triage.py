@@ -6,6 +6,7 @@ mock ICD-10 mapping, LangChain Agentic responses, and Financial Engines.
 """
 
 from __future__ import annotations
+import logging
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, status
@@ -21,6 +22,8 @@ from app.services.ner_parser import map_symptoms_to_icd10
 from app.services.langchain_agent import process_patient_query
 from app.services.cost_engine import estimate_procedure_cost
 from app.services.nbfc_scorer import calculate_dti_and_risk_band
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/triage", tags=["Triage"])
 
@@ -73,11 +76,22 @@ async def triage_user_query(payload: UserQueryRequest) -> TriageResponse:
         "identified_codes": icd10_codes
     }
 
-    agent_response = process_patient_query(
-        session_id="mvp-session-1", 
-        query=payload.query, 
-        context=context
-    )
+    # Try to get AI-powered response, fall back to template if LLM unavailable
+    try:
+        agent_response = process_patient_query(
+            session_id="mvp-session-1", 
+            query=payload.query, 
+            context=context
+        )
+    except RuntimeError as e:
+        # LLM service unavailable - provide a fallback response
+        logger.warning(f"LLM service unavailable, using fallback response: {e}")
+        agent_response = (
+            f"Based on your query about '{payload.query}', I've analyzed your symptoms. "
+            f"Triage Status: {severity_result.severity} - {severity_result.rationale}\n\n"
+            f"Please consult with a healthcare provider for personalized advice. "
+            f"{MANDATORY_MEDICAL_DISCLAIMER}"
+        )
 
     # --- PHASE 4: FINANCIAL ENGINES ---
     cost_estimate = None

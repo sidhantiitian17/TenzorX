@@ -76,11 +76,13 @@ class GeoSpatialAgent:
         if self.use_google:
             self.geocoder = GoogleV3(
                 api_key=settings.GOOGLE_MAPS_API_KEY,
-                user_agent="healthnav-india"
+                user_agent="healthnav-india",
+                timeout=5
             )
         else:
             self.geocoder = Nominatim(
-                user_agent=settings.NOMINATIM_USER_AGENT or "healthnav-india"
+                user_agent=settings.NOMINATIM_USER_AGENT or "healthnav-india",
+                timeout=5
             )
 
     def geocode_location(self, location_string: str) -> Optional[LocationResult]:

@@ -27,11 +27,11 @@ const phaseIcons: Record<ClinicalPhaseDetail['phase'], string> = {
 };
 
 const phaseColors: Record<ClinicalPhaseDetail['phase'], string> = {
-  consultation: 'bg-blue-50 border-blue-200',
-  diagnostics: 'bg-purple-50 border-purple-200',
-  procedure: 'bg-red-50 border-red-200',
-  observation_stay: 'bg-orange-50 border-orange-200',
-  follow_up_medication: 'bg-green-50 border-green-200',
+  consultation: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20',
+  diagnostics: 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20',
+  procedure: 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20',
+  observation_stay: 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20',
+  follow_up_medication: 'bg-green-500/10 border-green-500/20 hover:bg-green-500/20',
 };
 
 export function ClinicalMappingCard({ mapping, onCorrect }: ClinicalMappingCardProps) {

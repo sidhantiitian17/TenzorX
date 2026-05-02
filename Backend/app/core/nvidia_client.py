@@ -96,13 +96,27 @@ class LLMClient:
             "stream": self.stream,
         }
 
+        # Check if API key is configured
+        if not LONGCAT_API_KEY or LONGCAT_API_KEY == "your-longcat-api-key-here":
+            error_msg = "Longcat AI API key not configured - LLM features unavailable"
+            logger.warning(error_msg)
+            raise RuntimeError(error_msg)
+
         logger.info(f"🌐 Calling Longcat AI LLM API: {LONGCAT_API_URL}")
         try:
-            response = requests.post(
+            # Use a session with connection timeout to fail fast on DNS/SSL issues
+            session = requests.Session()
+            adapter = requests.adapters.HTTPAdapter(
+                max_retries=0,  # No retries for fast failure
+            )
+            session.mount('https://', adapter)
+            session.mount('http://', adapter)
+            
+            response = session.post(
                 LONGCAT_API_URL,
                 headers=self.headers,
                 json=payload,
-                timeout=60
+                timeout=(0.5, 1)  # (connect timeout, read timeout) - aggressive for <10s total
             )
             response.raise_for_status()
             logger.info(f"✅ Longcat AI LLM API response received: {response.status_code}")

@@ -190,9 +190,9 @@ class MasterOrchestrator:
                 "appointment_paperwork",
             ]
         
-        # Procedure info: Triage + Pathway
+        # Procedure info: Triage + Pathway + Cost (users want cost info with procedures)
         if intent == "PROCEDURE_INFO":
-            return ["ner_triage", "clinical_pathway", "xai_explainer"]
+            return ["ner_triage", "clinical_pathway", "financial_engine", "xai_explainer"]
         
         # Financial help: Financial engine only
         if intent == "FINANCIAL_HELP":
@@ -206,8 +206,8 @@ class MasterOrchestrator:
         if intent == "COMORBIDITY_QUERY":
             return ["clinical_pathway", "financial_engine", "xai_explainer"]
         
-        # Default: Basic pipeline
-        return ["ner_triage", "clinical_pathway", "xai_explainer"]
+        # Default: Basic pipeline with cost estimate
+        return ["ner_triage", "clinical_pathway", "financial_engine", "xai_explainer"]
 
     def execute_ner_triage(
         self,
@@ -236,9 +236,10 @@ class MasterOrchestrator:
         )
 
         # Get city tier
-        city_tier = 2
-        if location:
-            city_tier = self.geo_engine.get_city_tier(location)
+        city_tier_raw = self.geo_engine.get_city_tier(location) if location else "tier2"
+        # Convert tier string to integer (metro/tier1=1, tier2=2, tier3=3)
+        tier_map = {"metro": 1, "tier1": 1, "tier2": 2, "tier3": 3}
+        city_tier = tier_map.get(city_tier_raw.lower() if isinstance(city_tier_raw, str) else city_tier_raw, 2)
 
         # Extract budget from query
         budget_inr = self._extract_budget(query)
@@ -246,7 +247,15 @@ class MasterOrchestrator:
         # If incomplete data, use Clinical Mapping Agent via LLM
         if not has_complete_data:
             logger.info(f"Incomplete GraphRAG data, using LLM clinical mapping for: {query[:50]}...")
-            clinical_mapping = self.clinical_mapping_agent.map_query(query)
+            
+            # Try LLM mapping, fall back to basic extraction if LLM unavailable
+            try:
+                clinical_mapping = self.clinical_mapping_agent.map_query(query)
+            except RuntimeError as e:
+                logger.warning(f"LLM clinical mapping failed, using fallback: {e}")
+                # Create fallback clinical mapping from query keywords
+                from app.agents.clinical_mapping_agent import generate_clinical_mapping
+                clinical_mapping = generate_clinical_mapping(query)
 
             triage_result = {
                 "agent": "ner_triage",
@@ -256,14 +265,14 @@ class MasterOrchestrator:
                 "icd10_label": clinical_mapping.icd10_label,
                 "snomed_ct": clinical_mapping.snomed_code,
                 "city": location,
-                "city_tier": int(city_tier) if city_tier else 2,
+                "city_tier": city_tier,
                 "budget_inr": budget_inr,
                 "triage": severity,
                 "mapping_confidence": clinical_mapping.confidence,
                 "confidence_factors": clinical_mapping.confidence_factors,
                 "mapping_rationale": clinical_mapping.mapping_rationale,
                 "extracted_comorbidities": patient_profile.get("comorbidities", []),
-                "clinical_mapping_source": "llm_agent",
+                "clinical_mapping_source": "llm_agent" if clinical_mapping.confidence > 0.5 else "keyword_fallback",
             }
             return triage_result
 
@@ -292,7 +301,7 @@ class MasterOrchestrator:
             "icd10_label": icd10_data.get("label", ""),
             "snomed_ct": snomed,
             "city": location,
-            "city_tier": int(city_tier) if city_tier else 2,
+            "city_tier": city_tier,
             "budget_inr": budget_inr,
             "triage": severity,
             "mapping_confidence": rag_result.get("confidence_score", 0.7),
@@ -349,6 +358,11 @@ class MasterOrchestrator:
             age=age,
         )
         
+        # Extract total cost from final_cost for use in clinical phases
+        total_cost = final_cost.get("total", {})
+        total_min = total_cost.get("min", 0) if isinstance(total_cost, dict) else 0
+        total_max = total_cost.get("max", 0) if isinstance(total_cost, dict) else 0
+        
         # Build pathway steps (pathway is a list of step dicts)
         pathway_steps = []
         steps_list = pathway if isinstance(pathway, list) else pathway.get("steps", [])
@@ -362,11 +376,13 @@ class MasterOrchestrator:
                 "cost_max": step_dict.get("cost_max", 0) if isinstance(step_dict, dict) else 0,
             })
         
-        # Get clinical phases with LLM explanations
+        # Get clinical phases with LLM explanations - pass actual costs so phases have real values
         clinical_phases = self.pathway_engine.get_clinical_phases(
             procedure=procedure,
             pathway_steps=pathway_steps,
-            icd10_code=""
+            icd10_code="",
+            total_min=total_min,
+            total_max=total_max
         )
         
         # Get comorbidity impacts
@@ -380,15 +396,19 @@ class MasterOrchestrator:
                     "add_max": impact.get("max_add", 0),
                 })
         
+        # total_min and total_max already extracted earlier for clinical phases
         return {
             "agent": "clinical_pathway",
             "pathway_steps": pathway_steps,
             "clinical_phases": clinical_phases,
-            "total_min": final_cost.get("min", 0),
-            "total_max": final_cost.get("max", 0),
+            "total_min": total_min,
+            "total_max": total_max,
             "comorbidity_impacts": comorbidity_impacts,
             "cost_confidence": 70 + (len(pathway_steps) * 2),
             "geo_adjustment_note": f"Cost adjusted for Tier {city_tier} city.",
+            "cost_breakdown": final_cost.get("breakdown", {}),
+            "geo_multiplier": final_cost.get("geo_multiplier", 1.0),
+            "comorbidity_multiplier": final_cost.get("comorbidity_multiplier", 1.0),
         }
 
     def execute_hospital_discovery(
@@ -398,8 +418,17 @@ class MasterOrchestrator:
         lat: float,
         lng: float,
         budget_inr: Optional[int] = None,
+        max_distance_km: float = 50.0,
+        min_hospitals: int = 5,
     ) -> Dict[str, Any]:
-        """Execute Hospital Discovery Agent."""
+        """
+        Execute Hospital Discovery Agent with radius-based search.
+        
+        Finds hospitals within specified radius from user location, ensuring
+        at least min_hospitals are returned across all tiers (premium, mid, budget).
+        """
+        from geopy.distance import geodesic
+        
         # Query GraphRAG for hospitals (optional - works without Neo4j)
         hospitals_raw = []
         if self.graph_rag:
@@ -410,32 +439,48 @@ class MasterOrchestrator:
                 logger.warning(f"GraphRAG query failed: {e}")
                 hospitals_raw = []
         
-        # If no hospitals from GraphRAG, fetch from hospital search service
+        # If no hospitals from GraphRAG, use fallback
+        # Note: Hospital search service is async - skip in sync context
         if not hospitals_raw:
-            try:
-                from app.services.hospital_search import search_hospitals, HospitalSearchRequest
-                request = HospitalSearchRequest(
-                    location=city,
-                    limit=5,
-                    min_rating=3.0,
-                )
-                hospitals_result = search_hospitals(request)
-                # Convert Hospital objects to dicts and extract coordinates
-                hospitals_raw = []
-                for h in hospitals_result:
-                    h_dict = h.dict() if hasattr(h, 'dict') else h
-                    # Extract coordinates from nested object to top-level lat/lon for fusion engine
-                    coords = h_dict.get('coordinates', {})
-                    h_dict['lat'] = coords.get('lat', 0)
-                    h_dict['lon'] = coords.get('lng', 0)  # fusion engine uses 'lon'
-                    hospitals_raw.append(h_dict)
-            except Exception as e:
-                logger.warning(f"Hospital search failed: {e}")
-                hospitals_raw = []
+            logger.info(f"No GraphRAG hospitals for {city}, using empty fallback (async search unavailable)")
+            hospitals_raw = []
         
-        # Score and rank hospitals
+        # Note: Skipping nearby cities search (requires async context)
+        # Return empty hospitals if GraphRAG not available - frontend will handle gracefully
+        
+        # Calculate actual distances and filter by radius
+        hospitals_with_distance = []
+        if lat and lng:
+            user_location = (lat, lng)
+            for h in hospitals_raw:
+                h_lat = h.get('lat') or h.get('coordinates', {}).get('lat', 0)
+                h_lng = h.get('lon') or h.get('coordinates', {}).get('lng', 0)
+                if h_lat and h_lng:
+                    hospital_location = (h_lat, h_lng)
+                    distance = geodesic(user_location, hospital_location).kilometers
+                    h['distance_km'] = round(distance, 1)
+                    if distance <= max_distance_km:
+                        hospitals_with_distance.append(h)
+        
+        # If we don't have enough hospitals after radius filter, expand radius
+        if len(hospitals_with_distance) < min_hospitals and hospitals_raw:
+            # Sort all hospitals by distance and take the closest ones
+            for h in hospitals_raw:
+                if 'distance_km' not in h:
+                    h_lat = h.get('lat') or h.get('coordinates', {}).get('lat', 0)
+                    h_lng = h.get('lon') or h.get('coordinates', {}).get('lng', 0)
+                    if h_lat and h_lng and lat and lng:
+                        hospital_location = (h_lat, h_lng)
+                        distance = geodesic((lat, lng), hospital_location).kilometers
+                        h['distance_km'] = round(distance, 1)
+            
+            # Sort by distance
+            all_sorted = sorted(hospitals_raw, key=lambda x: x.get('distance_km', 999))
+            hospitals_with_distance = all_sorted[:min_hospitals * 2]  # Get at least 2x min to ensure tier diversity
+        
+        # Score and rank hospitals (use the distance-filtered list)
         hospitals_scored = self.fusion_engine.score_and_rank(
-            hospitals=hospitals_raw,
+            hospitals=hospitals_with_distance,
             procedure=procedure,
             user_lat=lat,
             user_lon=lng,
@@ -481,20 +526,98 @@ class MasterOrchestrator:
         
         return markers
 
+    def _get_nearby_cities(self, city: str) -> List[str]:
+        """
+        Get nearby major cities for radius-based hospital search expansion.
+        
+        Args:
+            city: The primary city name
+            
+        Returns:
+            List of nearby city names to search for additional hospitals
+        """
+        city = city.lower().strip()
+        
+        # City clusters - nearby cities within ~100km radius
+        city_clusters = {
+            # Chhattisgarh cluster
+            "raipur": ["Bhilai", "Durg", "Bilaspur", "Nagpur"],
+            "bhilai": ["Raipur", "Durg", "Bilaspur"],
+            "durg": ["Raipur", "Bhilai", "Bilaspur"],
+            "bilaspur": ["Raipur", "Bhilai", "Durg"],
+            
+            # Maharashtra cluster
+            "nagpur": ["Raipur", "Amravati", "Wardha", "Chandrapur"],
+            "amravati": ["Nagpur", "Wardha"],
+            "pune": ["Mumbai", "Satara", "Ahmednagar", "Kolhapur"],
+            "mumbai": ["Pune", "Thane", "Navi Mumbai", "Kalyan"],
+            
+            # Karnataka cluster
+            "bangalore": ["Mysore", "Hosur", "Tumkur", "Mandya"],
+            "bengaluru": ["Mysore", "Hosur", "Tumkur", "Mandya"],
+            "mysore": ["Bangalore", "Mandya"],
+            
+            # Telangana cluster
+            "hyderabad": ["Secunderabad", "Ranga Reddy", "Warangal", "Khammam"],
+            "secunderabad": ["Hyderabad", "Warangal"],
+            
+            # Tamil Nadu cluster
+            "chennai": ["Kanchipuram", "Tiruvallur", "Vellore", "Pondicherry"],
+            "madras": ["Kanchipuram", "Tiruvallur", "Vellore"],
+            "coimbatore": ["Erode", "Tiruppur", "Salem"],
+            
+            # Delhi NCR cluster
+            "delhi": ["Noida", "Gurgaon", "Ghaziabad", "Faridabad"],
+            "new delhi": ["Noida", "Gurgaon", "Ghaziabad", "Faridabad"],
+            "noida": ["Delhi", "Greater Noida"],
+            "gurgaon": ["Delhi", "Faridabad"],
+            
+            # Gujarat cluster
+            "ahmedabad": ["Gandhinagar", "Vadodara", "Rajkot", "Surat"],
+            "vadodara": ["Ahmedabad", "Rajkot"],
+            "surat": ["Vadodara", "Rajkot"],
+        }
+        
+        return city_clusters.get(city, [])
+
     def execute_financial_engine(
         self,
+        procedure_name: str,
         procedure_cost_estimate: int,
+        pathway_cost_data: Optional[Dict[str, Any]] = None,
         patient_income_monthly: Optional[float] = None,
         existing_emis: Optional[float] = None,
         loan_tenure_months: int = 24,
         city: str = "",
         hospital_tier: str = "mid-tier",
         comorbidities: List[str] = [],
+        city_tier: int = 2,
     ) -> Dict[str, Any]:
-        """Execute Financial Engine Agent."""
+        """Execute Financial Engine Agent with real component-level cost estimation.
+        
+        Uses Knowledge Graph pathway data when available, falls back to cost engine estimates.
+        Provides detailed component breakdown for frontend display.
+        """
+        from app.services.cost_engine import estimate_cost_with_fallback
+        
+        # Map city tier integer to string format
+        tier_map = {1: "tier-1", 2: "tier-2", 3: "tier-3"}
+        location_tier = tier_map.get(city_tier, "tier-2")
+        
+        # Get real cost estimation with component breakdown
+        cost_result = estimate_cost_with_fallback(
+            procedure_name=procedure_name,
+            pathway_cost_data=pathway_cost_data,
+            known_comorbidities=comorbidities,
+            location_tier=location_tier,
+        )
+        
+        # Use the estimated cost for loan evaluation
+        total_cost_avg = (cost_result["total_cost_range"]["min"] + cost_result["total_cost_range"]["max"]) // 2
+        
         # Evaluate loan
         loan_result = self.loan_engine.evaluate(
-            total_treatment_cost=procedure_cost_estimate,
+            total_treatment_cost=total_cost_avg,
             gross_monthly_income=patient_income_monthly or 50000,
             existing_emis=existing_emis or 0,
         )
@@ -531,14 +654,19 @@ class MasterOrchestrator:
             {"name": "HDFC Bank Medical Loan", "range": "Rs 1L - Rs 10L", "tat": "1-3 days"},
         ]
         
-        # Cost breakdown items
-        breakdown = [
-            {"label": "Pre-op assessment", "min": 3000, "max": 8000},
-            {"label": "Implant/Consumables", "min": 20000, "max": 60000},
-            {"label": "Surgery/Procedure", "min": 80000, "max": 120000},
-            {"label": "Hospital stay", "min": 30000, "max": 60000},
-            {"label": "Post-op care", "min": 5000, "max": 15000},
-        ]
+        # Get real cost breakdown items from cost engine
+        breakdown = cost_result.get("breakdown_items", [])
+        
+        # If no breakdown items, create default (shouldn't happen with new cost engine)
+        if not breakdown:
+            breakdown = [
+                {"label": "Procedure / Surgery", "min": int(total_cost_avg * 0.4), "max": int(total_cost_avg * 0.5)},
+                {"label": "Doctor Fees", "min": int(total_cost_avg * 0.1), "max": int(total_cost_avg * 0.15)},
+                {"label": "Hospital Stay", "min": int(total_cost_avg * 0.15), "max": int(total_cost_avg * 0.25)},
+                {"label": "Diagnostics", "min": int(total_cost_avg * 0.08), "max": int(total_cost_avg * 0.15)},
+                {"label": "Medicines", "min": int(total_cost_avg * 0.08), "max": int(total_cost_avg * 0.12)},
+                {"label": "Contingency", "min": int(total_cost_avg * 0.05), "max": int(total_cost_avg * 0.08)},
+            ]
         
         # Comorbidity surcharges
         surcharges = []
@@ -550,20 +678,18 @@ class MasterOrchestrator:
                     "add_max": 30000,
                 })
         
+        # Calculate tier-specific costs based on the estimated range
+        base_min = cost_result["total_cost_range"]["min"]
+        base_max = cost_result["total_cost_range"]["max"]
+        
         return {
             "agent": "financial_engine",
-            "total_cost_range": {
-                "min": int(procedure_cost_estimate * 0.85),
-                "max": int(procedure_cost_estimate * 1.15),
-            },
-            "typical_range": {
-                "min": int(procedure_cost_estimate * 0.9),
-                "max": int(procedure_cost_estimate * 1.1),
-            },
+            "total_cost_range": cost_result["total_cost_range"],
+            "typical_range": cost_result["typical_range"],
             "tier_cost_comparison": {
-                "budget": {"min": 80000, "max": 140000},
-                "mid_tier": {"min": 120000, "max": 220000},
-                "premium": {"min": 250000, "max": 450000},
+                "budget": {"min": int(base_min * 0.7), "max": int(base_max * 0.75)},
+                "mid_tier": {"min": base_min, "max": base_max},
+                "premium": {"min": int(base_min * 1.3), "max": int(base_max * 1.4)},
             },
             "emi_calculator": {
                 "loan_amount": loan_result.get("loan_amount", 0),
@@ -582,6 +708,9 @@ class MasterOrchestrator:
             "lending_partners": lenders,
             "cost_breakdown_items": breakdown,
             "comorbidity_surcharges": surcharges,
+            "cost_source": cost_result.get("source", "cost_engine"),
+            "geo_multiplier": cost_result.get("geo_multiplier", 1.0),
+            "comorbidity_multiplier": cost_result.get("comorbidity_multiplier", 1.0),
         }
 
     def execute_geo_spatial(
@@ -729,29 +858,67 @@ Confidence: {xai_data.get('confidence_score', 70)}%
         agent_outputs: Dict[str, Any],
         severity: str,
     ) -> str:
-        """Generate fallback when LLM fails."""
+        """Generate fallback when LLM fails - uses agent pipeline data for rich response."""
         ner_data = agent_outputs.get("ner_triage") or {}
+        pathway_data = agent_outputs.get("clinical_pathway") or {}
         hospital_data = agent_outputs.get("hospital_discovery") or {}
         financial_data = agent_outputs.get("financial_engine") or {}
         
-        procedure = ner_data.get("canonical_procedure", "your procedure")
-        hospitals = hospital_data.get("result_count", 0)
-        cost = financial_data.get("total_cost_range", {})
+        # Get procedure name - try multiple sources for best result
+        procedure = ner_data.get("canonical_procedure", "")
+        if not procedure or procedure == "General Consultation":
+            # Try to get from pathway data or use a more helpful default
+            procedure = "your condition"
         
-        base = f"I found information about {procedure}."
+        # Build rich informative response
+        sections = []
         
-        if hospitals > 0:
-            base += f"\n\nI found {hospitals} hospitals that perform this procedure."
-        
-        if cost:
-            base += f"\n\nEstimated cost range: Rs {cost.get('min', 0):,} – Rs {cost.get('max', 0):,}"
-        
+        # Header based on severity
         if severity == "RED":
-            base = "🚨 This appears to be a medical emergency. Please call 112 or go to the nearest hospital immediately.\n\n" + base
+            sections.append("🚨 This appears to be a medical emergency. Please call 112 or go to the nearest hospital immediately.")
         
-        base += "\n\n⚕ This is decision support only — consult a qualified doctor."
+        # Main response with procedure name
+        sections.append(f"I found information about **{procedure}**. Here's what I discovered through my analysis:")
         
-        return base
+        # Clinical pathway info
+        pathway_steps = pathway_data.get("pathway_steps", [])
+        clinical_phases = pathway_data.get("clinical_phases", [])
+        if pathway_steps or clinical_phases:
+            sections.append(f"\n**Treatment Pathway:** This typically involves {len(pathway_steps or clinical_phases)} phases from consultation through follow-up care.")
+        
+        # Cost information
+        cost = financial_data.get("total_cost_range", {}) or pathway_data.get("total_min", {})
+        if cost and isinstance(cost, dict) and (cost.get("min") or cost.get("max")):
+            cost_min = cost.get("min", 0)
+            cost_max = cost.get("max", 0)
+            if cost_min and cost_max:
+                sections.append(f"\n**Cost Estimate:** The typical cost range is Rs {cost_min:,} – Rs {cost_max:,} depending on the hospital tier and city.")
+        elif pathway_data.get("total_min") and pathway_data.get("total_max"):
+            total_min = pathway_data.get("total_min", 0)
+            total_max = pathway_data.get("total_max", 0)
+            if total_min and total_max:
+                sections.append(f"\n**Cost Estimate:** The typical cost range is Rs {total_min:,} – Rs {total_max:,} depending on the hospital tier and city.")
+        
+        # Hospital information
+        hospitals = hospital_data.get("result_count", 0)
+        if hospitals > 0:
+            sections.append(f"\n**Hospitals:** I found {hospitals} hospitals that can provide this treatment. Check the Results panel for details.")
+        
+        # Financial assistance
+        schemes = financial_data.get("government_schemes", [])
+        if schemes:
+            sections.append(f"\n**Financial Help:** There are {len(schemes)} government schemes available that may help cover costs. See the Financial Assistance section.")
+        
+        # Add confidence note
+        mapping_confidence = ner_data.get("mapping_confidence", 0)
+        if mapping_confidence:
+            confidence_pct = int(mapping_confidence * 100) if mapping_confidence < 1 else int(mapping_confidence)
+            sections.append(f"\n_Mapping confidence: {confidence_pct}%_")
+        
+        # Mandatory disclaimer
+        sections.append("\n⚕ **This is decision support only — consult a qualified doctor.**")
+        
+        return "\n".join(sections)
 
     def process(
         self,
@@ -845,15 +1012,27 @@ Confidence: {xai_data.get('confidence_score', 70)}%
         pathway_data = agent_outputs.get("clinical_pathway") or {}
         procedure_cost = (pathway_data.get("total_min", 0) + pathway_data.get("total_max", 0)) // 2
         
+        # Prepare pathway cost data for cost engine
+        pathway_cost_data = None
+        if pathway_data.get("total_min") and pathway_data.get("total_max"):
+            pathway_cost_data = {
+                "total_min": pathway_data.get("total_min", 0),
+                "total_max": pathway_data.get("total_max", 0),
+                "pathway_steps": pathway_data.get("pathway_steps", []),
+            }
+        
         # Execute Financial Engine
         if "financial_engine" in agents_to_run:
             agent_outputs["financial_engine"] = self.execute_financial_engine(
+                procedure_name=procedure,
                 procedure_cost_estimate=procedure_cost,
+                pathway_cost_data=pathway_cost_data,
                 patient_income_monthly=patient_profile.get("income_monthly"),
                 existing_emis=patient_profile.get("existing_emis"),
                 city=location or "",
                 hospital_tier="mid-tier",
                 comorbidities=comorbidities,
+                city_tier=city_tier,
             )
         
         # Execute XAI Explainer

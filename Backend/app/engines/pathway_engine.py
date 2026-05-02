@@ -187,7 +187,9 @@ class PathwayEngine:
         self,
         procedure: str,
         pathway_steps: List[Dict[str, Any]],
-        icd10_code: str = ""
+        icd10_code: str = "",
+        total_min: int = 0,
+        total_max: int = 0
     ) -> List[Dict[str, Any]]:
         """
         Generate detailed clinical phases with LLM explanations.
@@ -197,23 +199,29 @@ class PathwayEngine:
             procedure: Canonical procedure name
             pathway_steps: Existing pathway steps
             icd10_code: ICD-10 code
+            total_min: Total minimum cost (if available)
+            total_max: Total maximum cost (if available)
 
         Returns:
             List of clinical phase dicts with detailed information
         """
         # Use fallback for fast response - LLM call adds too much latency for sync API
         # Fallback provides quality data instantly based on pathway steps
-        return self._fallback_clinical_phases(procedure, pathway_steps)
+        return self._fallback_clinical_phases(procedure, pathway_steps, total_min, total_max)
 
     def _fallback_clinical_phases(
         self,
         procedure: str,
-        pathway_steps: List[Dict[str, Any]]
+        pathway_steps: List[Dict[str, Any]],
+        total_min: int = 0,
+        total_max: int = 0
     ) -> List[Dict[str, Any]]:
         """Fallback clinical phases when LLM fails."""
-        # Calculate total cost from steps
-        total_min = sum(s.get("cost_min", 0) for s in pathway_steps)
-        total_max = sum(s.get("cost_max", 0) for s in pathway_steps)
+        # Calculate total cost from steps if not provided
+        if total_min == 0:
+            total_min = sum(s.get("cost_min", 0) for s in pathway_steps)
+        if total_max == 0:
+            total_max = sum(s.get("cost_max", 0) for s in pathway_steps)
         
         # Distribute costs across phases
         return [

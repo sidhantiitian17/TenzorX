@@ -191,7 +191,7 @@ function MapLegend() {
               : 'hover:bg-muted text-muted-foreground'
           )}
         >
-          <div className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-emerald-500" />
+          <div className="w-3 h-3 rounded-full bg-linear-to-br from-blue-500 via-purple-500 to-emerald-500" />
           <span>All Tiers</span>
         </button>
       </div>

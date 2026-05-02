@@ -70,6 +70,28 @@ class CostEngine:
                 "contingency": {"min": 20000, "max": 80000},
             },
         },
+        "nephrolithiasis": {
+            "total": {"min": 80000, "max": 200000, "typical_min": 100000, "typical_max": 150000},
+            "breakdown": {
+                "procedure": {"min": 40000, "max": 100000},
+                "doctor_fees": {"min": 10000, "max": 20000},
+                "hospital_stay": {"min": 15000, "max": 40000, "nights": "2-3"},
+                "diagnostics": {"min": 10000, "max": 25000},
+                "medicines": {"min": 5000, "max": 15000},
+                "contingency": {"min": 5000, "max": 15000},
+            },
+        },
+        "kidney stone": {
+            "total": {"min": 80000, "max": 200000, "typical_min": 100000, "typical_max": 150000},
+            "breakdown": {
+                "procedure": {"min": 40000, "max": 100000},
+                "doctor_fees": {"min": 10000, "max": 20000},
+                "hospital_stay": {"min": 15000, "max": 40000, "nights": "2-3"},
+                "diagnostics": {"min": 10000, "max": 25000},
+                "medicines": {"min": 5000, "max": 15000},
+                "contingency": {"min": 5000, "max": 15000},
+            },
+        },
     }
 
     def estimate(self, procedure: str, city_tier: str = "tier2") -> Dict[str, Any]:

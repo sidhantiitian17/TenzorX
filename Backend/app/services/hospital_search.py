@@ -277,6 +277,237 @@ class HospitalSearchService:
                 icu_available=True,
                 wait_time_days=3
             ),
+            # Additional Raipur Hospitals
+            Hospital(
+                id="h-rk-care-raipur",
+                name="Ram Krishna Care Hospital",
+                location="New Rajendra Nagar, Raipur, Chhattisgarh 492001",
+                city="Raipur",
+                distance_km=4.2,
+                rating=4.3,
+                review_count=278,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Urology", "Nephrology", "Cardiology", "Orthopedics"],
+                strengths=["Advanced urology center", "Affordable kidney stone treatment", "Experienced surgeons"],
+                risk_flags=["Wait times for elective procedures"],
+                cost_range={"min": 120000, "max": 250000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-rk-001",
+                        name="Dr. Rajesh Agrawal",
+                        specialization="Urology",
+                        experience_years=15,
+                        rating=4.5,
+                        fee_min=1800,
+                        fee_max=3200
+                    ),
+                    HospitalDoctor(
+                        id="d-rk-002",
+                        name="Dr. Seema Gupta",
+                        specialization="Nephrology",
+                        experience_years=12,
+                        rating=4.3,
+                        fee_min=1500,
+                        fee_max=2800
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-rk-001",
+                        sentiment="positive",
+                        excerpt="Excellent kidney stone treatment with modern lithotripsy."
+                    ),
+                    HospitalReview(
+                        id="r-rk-002",
+                        sentiment="positive",
+                        excerpt="Affordable and good quality urology care."
+                    )
+                ],
+                coordinates={"lat": 21.2431, "lng": 81.6634},
+                rank_score=86,
+                rank_signals=RankSignals(
+                    clinical_capability=87,
+                    reputation=84,
+                    accessibility=88,
+                    affordability=82
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=83,
+                    themes=[
+                        {"theme": "Urology care", "mentions": 89, "positive_pct": 86},
+                        {"theme": "Affordability", "mentions": 67, "positive_pct": 84}
+                    ],
+                    sample_quotes=[
+                        {"text": "Best urology department in Raipur at reasonable prices.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=3
+            ),
+            Hospital(
+                id="h-agrasen-raipur",
+                name="Agrasen Hospital",
+                location="Katora Talab, Raipur, Chhattisgarh 492001",
+                city="Raipur",
+                distance_km=2.8,
+                rating=4.0,
+                review_count=156,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Urology", "General Surgery", "Gynecology"],
+                strengths=["Patient-friendly care", "Reasonable pricing", "Quick appointments"],
+                risk_flags=["Limited specialized equipment"],
+                cost_range={"min": 100000, "max": 200000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-ag-001",
+                        name="Dr. Amit Sahu",
+                        specialization="Urology",
+                        experience_years=11,
+                        rating=4.2,
+                        fee_min=1200,
+                        fee_max=2200
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-ag-001",
+                        sentiment="positive",
+                        excerpt="Good hospital for kidney stone removal surgery."
+                    )
+                ],
+                coordinates={"lat": 21.2378, "lng": 81.6412},
+                rank_score=81,
+                rank_signals=RankSignals(
+                    clinical_capability=82,
+                    reputation=79,
+                    accessibility=90,
+                    affordability=88
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=78,
+                    themes=[
+                        {"theme": "Patient care", "mentions": 54, "positive_pct": 82},
+                        {"theme": "Value for money", "mentions": 48, "positive_pct": 79}
+                    ],
+                    sample_quotes=[
+                        {"text": "Reliable care without high costs.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="medium",
+                icu_available=True,
+                wait_time_days=4
+            ),
+            Hospital(
+                id="h-bhartiya-raipur",
+                name="Bhartiya Hospital",
+                location="G.E. Road, Raipur, Chhattisgarh 492001",
+                city="Raipur",
+                distance_km=6.5,
+                rating=3.8,
+                review_count=98,
+                tier="budget",
+                nabh_accredited=False,
+                specializations=["General Medicine", "Urology", "Orthopedics"],
+                strengths=["Lowest cost treatments", "Accessible location", "Basic care"],
+                risk_flags=["Basic facilities", "Limited specialist availability"],
+                cost_range={"min": 60000, "max": 130000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-bh-001",
+                        name="Dr. Vikram Patel",
+                        specialization="General Surgery",
+                        experience_years=9,
+                        rating=3.9,
+                        fee_min=800,
+                        fee_max=1500
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-bh-001",
+                        sentiment="neutral",
+                        excerpt="Affordable option for basic kidney stone treatment."
+                    )
+                ],
+                coordinates={"lat": 21.2289, "lng": 81.6156},
+                rank_score=74,
+                rank_signals=RankSignals(
+                    clinical_capability=75,
+                    reputation=72,
+                    accessibility=85,
+                    affordability=92
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=71,
+                    themes=[
+                        {"theme": "Affordability", "mentions": 42, "positive_pct": 76},
+                        {"theme": "Basic care", "mentions": 35, "positive_pct": 68}
+                    ],
+                    sample_quotes=[
+                        {"text": "Made treatment possible within limited budget.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="low",
+                icu_available=True,
+                wait_time_days=2
+            ),
+            Hospital(
+                id="h-mmi-raipur",
+                name="MMI Hospital",
+                location="Vidhan Sabha Road, Raipur, Chhattisgarh 492001",
+                city="Raipur",
+                distance_km=5.1,
+                rating=3.9,
+                review_count=112,
+                tier="budget",
+                nabh_accredited=False,
+                specializations=["General Surgery", "Urology", "Emergency Care"],
+                strengths=["Quick emergency response", "Budget-friendly packages", "Walk-in availability"],
+                risk_flags=["Limited advanced procedures", "Basic ICU"],
+                cost_range={"min": 50000, "max": 110000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-mmi-001",
+                        name="Dr. Ritu Sharma",
+                        specialization="General Surgery",
+                        experience_years=8,
+                        rating=4.0,
+                        fee_min=700,
+                        fee_max=1300
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-mmi-001",
+                        sentiment="positive",
+                        excerpt="Good for emergency kidney stone pain management."
+                    )
+                ],
+                coordinates={"lat": 21.2415, "lng": 81.6589},
+                rank_score=76,
+                rank_signals=RankSignals(
+                    clinical_capability=77,
+                    reputation=74,
+                    accessibility=88,
+                    affordability=90
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=73,
+                    themes=[
+                        {"theme": "Emergency care", "mentions": 38, "positive_pct": 78},
+                        {"theme": "Affordability", "mentions": 34, "positive_pct": 75}
+                    ],
+                    sample_quotes=[
+                        {"text": "Immediate relief at affordable rates.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="medium",
+                icu_available=False,
+                wait_time_days=1
+            ),
             Hospital(
                 id="h-care-nagpur",
                 name="CARE Hospitals Nagpur",

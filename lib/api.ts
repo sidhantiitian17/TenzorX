@@ -10,8 +10,8 @@ import type { SearchData, Hospital, CostEstimate, LenderRiskProfile, Message } f
 // Backend API base URL - configurable via environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-// Timeout for API requests (in milliseconds)
-const REQUEST_TIMEOUT = 60000;
+// Timeout for API requests (in milliseconds) - increased to 130s to match backend's 120s timeout + network overhead
+const REQUEST_TIMEOUT = 130000;
 
 /**
  * Error thrown when backend API calls fail
@@ -288,37 +288,97 @@ export function transformTriageToSearchData(
   // Get the first ICD-10 code for display
   const icd10Entries = Object.entries(triageResponse.icd10_codes);
   const primaryIcd10 = icd10Entries[0] ?? ['unknown', 'Unknown condition'];
+  
+  // ICD-10 code is the key, label is the value
+  const icd10Code = primaryIcd10[0] || '';
+  const icd10Label = primaryIcd10[1] || '';
+  
+  // Map common conditions to SNOMED codes
+  const snomedMapping: Record<string, string> = {
+    'diabetes': '44054006',
+    'type 2 diabetes': '44054006',
+    'type 1 diabetes': '46635009',
+    'hypertension': '38341003',
+    'asthma': '195967001',
+    'arthritis': '3723001',
+    'knee osteoarthritis': '239873007',
+    'heart disease': '56265001',
+    'cataract': '193570009',
+    'cancer': '363346000',
+    'kidney stone': '9557008',
+    'nephrolithiasis': '9557008',
+    'calculus of kidney': '9557008',
+    'renal stone': '9557008',
+  };
+  
+  // Find SNOMED code based on condition label
+  let snomedCode = '';
+  const normalizedLabel = icd10Label.toLowerCase();
+  for (const [key, code] of Object.entries(snomedMapping)) {
+    if (normalizedLabel.includes(key)) {
+      snomedCode = code;
+      break;
+    }
+  }
+  
+  // Determine category from ICD-10 code or label
+  let category = 'General Medicine';
+  if (icd10Code.startsWith('E')) category = 'Endocrinology';
+  else if (icd10Code.startsWith('I')) category = 'Cardiology';
+  else if (icd10Code.startsWith('M')) category = 'Orthopedics';
+  else if (icd10Code.startsWith('H')) category = 'Ophthalmology';
+  else if (icd10Code.startsWith('C')) category = 'Oncology';
+  else if (icd10Code.startsWith('J')) category = 'Pulmonology';
+  else if (icd10Code.startsWith('N')) category = 'Urology';
+  else if (normalizedLabel.includes('diabetes')) category = 'Endocrinology';
+  else if (normalizedLabel.includes('heart') || normalizedLabel.includes('cardiac')) category = 'Cardiology';
+  else if (normalizedLabel.includes('knee') || normalizedLabel.includes('joint')) category = 'Orthopedics';
+  else if (normalizedLabel.includes('eye') || normalizedLabel.includes('cataract')) category = 'Ophthalmology';
+  else if (normalizedLabel.includes('cancer') || normalizedLabel.includes('tumor')) category = 'Oncology';
+  else if (normalizedLabel.includes('kidney') || normalizedLabel.includes('stone') || normalizedLabel.includes('renal') || normalizedLabel.includes('nephro')) category = 'Urology';
 
   return {
     procedure: triageResponse.normalized_query,
-    icd10_code: primaryIcd10[1],
-    icd10_label: primaryIcd10[0],
-    snomed_code: '',
-    category: 'General Medicine',
+    icd10_code: icd10Code,
+    icd10_label: icd10Label,
+    snomed_code: snomedCode,
+    category,
     query_location: location,
     cost_range: costRange,
     confidence: confidence,
     cost_breakdown: triageResponse.cost_estimate?.breakdown
-      ? Object.entries(triageResponse.cost_estimate.breakdown).reduce((acc, [key, value]) => {
-          acc[key] = { min: Math.round(value * 0.9), max: value };
-          return acc;
-        }, {} as Record<string, { min: number; max: number }>)
-      : undefined,
+      ? {
+          procedure: { min: Math.round(triageResponse.cost_estimate.base_cost * 0.5), max: triageResponse.cost_estimate.adjusted_cost * 0.6 },
+          doctor_fees: { min: Math.round(triageResponse.cost_estimate.base_cost * 0.1), max: triageResponse.cost_estimate.adjusted_cost * 0.15 },
+          hospital_stay: { min: Math.round(triageResponse.cost_estimate.base_cost * 0.2), max: triageResponse.cost_estimate.adjusted_cost * 0.2 },
+          diagnostics: { min: Math.round(triageResponse.cost_estimate.base_cost * 0.1), max: triageResponse.cost_estimate.adjusted_cost * 0.1 },
+          medicines: { min: Math.round(triageResponse.cost_estimate.base_cost * 0.05), max: triageResponse.cost_estimate.adjusted_cost * 0.05 },
+          contingency: { min: Math.round(triageResponse.cost_estimate.base_cost * 0.05), max: triageResponse.cost_estimate.adjusted_cost * 0.1 },
+        }
+      : {
+          procedure: { min: costRange.min * 0.5, max: costRange.max * 0.6 },
+          doctor_fees: { min: costRange.min * 0.1, max: costRange.max * 0.15 },
+          hospital_stay: { min: costRange.min * 0.2, max: costRange.max * 0.2 },
+          diagnostics: { min: costRange.min * 0.1, max: costRange.max * 0.1 },
+          medicines: { min: costRange.min * 0.05, max: costRange.max * 0.05 },
+          contingency: { min: costRange.min * 0.05, max: costRange.max * 0.1 },
+        },
     comorbidity_warnings: [],
     hospitals: hospitals.slice(0, 3),
     clinical_mapping: {
       user_query: query,
       procedure: triageResponse.normalized_query,
-      icd10_code: primaryIcd10[1],
-      icd10_label: primaryIcd10[0],
-      snomed_code: '',
-      category: 'General Medicine',
+      icd10_code: icd10Code,
+      icd10_label: icd10Label,
+      snomed_code: snomedCode,
+      category,
       pathway: [],
       confidence: confidence,
       confidence_factors: [
         { key: 'severity_assessment', label: 'Severity Assessment', score: 85, weight: 0.4, note: triageResponse.rationale },
-        { key: 'icd10_mapping', label: 'ICD-10 Mapping', score: 75, weight: 0.3, note: `Mapped to ${primaryIcd10[1]}` },
-        { key: 'llm_confidence', label: 'AI Analysis', score: 80, weight: 0.3, note: 'Processed by NVIDIA Mistral LLM' },
+        { key: 'icd10_mapping', label: 'ICD-10 Mapping', score: icd10Code ? 85 : 60, weight: 0.3, note: icd10Code ? `Mapped to ${icd10Code}: ${icd10Label}` : 'Limited ICD-10 match' },
+        { key: 'snomed_mapping', label: 'SNOMED CT', score: snomedCode ? 90 : 50, weight: 0.15, note: snomedCode ? `Mapped to ${snomedCode}` : 'SNOMED mapping not available' },
+        { key: 'llm_confidence', label: 'AI Analysis', score: 80, weight: 0.15, note: 'Processed by NVIDIA Mistral LLM' },
       ],
     },
     pathway: [],
@@ -368,12 +428,142 @@ export async function callChatAPI(
     confidence_score: number;
     disclaimer: string;
   };
+  // Nested results_panel structure from Master Orchestrator
+  results_panel?: {
+    clinical_interpretation?: {
+      canonical_procedure: string;
+      category: string;
+      icd10: string;
+      icd10_label?: string;
+      snomed_ct: string;
+      mapping_confidence: number;
+      confidence_factors?: Array<{
+        key: string;
+        label: string;
+        score: number;
+      }>;
+      mapping_rationale?: string;
+      clinical_mapping_source?: 'knowledge_graph' | 'llm_agent';
+    };
+    pathway?: {
+      pathway_steps: Array<{
+        step: number;
+        name: string;
+        duration: string;
+        cost_min: number;
+        cost_max: number;
+      }>;
+      clinical_phases?: Array<{
+        phase: 'consultation' | 'diagnostics' | 'procedure' | 'observation_stay' | 'follow_up_medication';
+        name: string;
+        description: string;
+        activities: string[];
+        cost_min: number;
+        cost_max: number;
+        duration: string;
+        responsible_party: string;
+        llm_explanation: string;
+      }>;
+      total_min: number;
+      total_max: number;
+      comorbidity_impacts?: Array<{
+        condition: string;
+        add_min: number;
+        add_max: number;
+      }>;
+      geo_adjustment_note?: string;
+    };
+    cost_estimate?: {
+      total_cost_range: { min: number; max: number };
+      components?: Record<string, { min: number; max: number }>;
+    };
+    hospitals?: {
+      agent: string;
+      result_count: number;
+      hospitals: Hospital[];
+      map_markers: Array<{
+        id: string;
+        lat: number;
+        lng: number;
+        name: string;
+        tier: string;
+        color: string;
+      }>;
+    };
+    map_data?: {
+      agent: string;
+      user_coords: { lat: number; lng: number };
+      city_tier: number;
+      hospital_markers: Array<{
+        id: string;
+        lat: number;
+        lng: number;
+        name: string;
+        tier: string;
+        color: string;
+        cost_label?: string;
+        distance_km?: number;
+        rating?: number;
+        nabh?: boolean;
+      }>;
+      map_config: {
+        center: [number, number];
+        zoom: number;
+        tile_layer: string;
+        legend: Record<string, string>;
+      };
+    };
+    xai?: {
+      agent: string;
+      confidence_score: number;
+      confidence_verdict: string;
+      top_hospital?: string;
+      fusion_score?: number;
+      shap_highlights?: Array<{
+        feature: string;
+        contribution: number;
+        direction: 'positive' | 'negative';
+      }>;
+    };
+    checklist?: {
+      availability_proxy: { wait_time_display: string };
+      documents: Array<{ name: string; required: boolean; description: string }>;
+      questions: string[];
+      forms: Array<{ form_id: string; name: string; download_url: string }>;
+      preparation_tips?: string[];
+      what_to_expect?: string;
+    };
+    financial_assistance?: {
+      dti_ratio: number;
+      risk_flag: string;
+      emi_options: { '12_months': number; '24_months': number; '36_months': number };
+      government_schemes: Array<{ name: string; eligibility: string; coverage_pct: string }>;
+      lending_partners: Array<{ name: string; rate_range: string; max_tenure: number }>;
+      call_to_action: string;
+      personalized_advice?: string;
+      recommended_scheme?: string;
+      dti_assessment?: {
+        risk_level: string;
+        rate_range: string;
+        cta: string;
+      };
+    };
+  };
+  // Also keep top-level aliases for backward compatibility
   clinical_interpretation?: {
     canonical_procedure: string;
     category: string;
     icd10: string;
+    icd10_label?: string;
     snomed_ct: string;
     mapping_confidence: number;
+    confidence_factors?: Array<{
+      key: string;
+      label: string;
+      score: number;
+    }>;
+    mapping_rationale?: string;
+    clinical_mapping_source?: 'knowledge_graph' | 'llm_agent';
   };
   treatment_pathway?: {
     phases: Array<{
@@ -383,6 +573,17 @@ export async function callChatAPI(
     }>;
     total_estimated_cost: { min: number; max: number };
     comorbidity_note?: string;
+    clinical_phases?: Array<{
+      phase: 'consultation' | 'diagnostics' | 'procedure' | 'observation_stay' | 'follow_up_medication';
+      name: string;
+      description: string;
+      activities: string[];
+      cost_min: number;
+      cost_max: number;
+      duration: string;
+      responsible_party: string;
+      llm_explanation: string;
+    }>;
   };
   cost_estimate?: {
     total: { min: number; max: number };
@@ -411,12 +612,21 @@ export async function callChatAPI(
     government_schemes: Array<{ name: string; eligibility: string; coverage_pct: string }>;
     lending_partners: Array<{ name: string; rate_range: string; max_tenure: number }>;
     call_to_action: string;
+    personalized_advice?: string;
+    recommended_scheme?: string;
+    dti_assessment?: {
+      risk_level: string;
+      rate_range: string;
+      cta: string;
+    };
   };
   appointment_checklist?: {
     availability_proxy: { wait_time_display: string };
     documents: Array<{ name: string; required: boolean; description: string }>;
     questions: string[];
     forms: Array<{ form_id: string; name: string; download_url: string }>;
+    preparation_tips?: string[];
+    what_to_expect?: string;
   };
   xai_explanation?: {
     shap_waterfall: {

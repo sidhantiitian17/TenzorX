@@ -29,6 +29,10 @@ from app.engines.loan_engine import LoanEngine
 from app.agents.geo_spatial_agent import GeoSpatialAgent
 from app.agents.xai_explainer_agent import XAIExplainerAgent
 from app.agents.appointment_agent import AppointmentAgent
+from app.agents.clinical_mapping_agent import (
+    ClinicalMappingAgent,
+    generate_clinical_mapping,
+)
 from app.schemas.response_models import (
     MasterResponse,
     ChatResponseData,
@@ -107,6 +111,7 @@ class MasterOrchestrator:
         self.geo_spatial_agent = GeoSpatialAgent()
         self.xai_explainer = XAIExplainerAgent()
         self.appointment_agent = AppointmentAgent()
+        self.clinical_mapping_agent = ClinicalMappingAgent()
 
     @property
     def graph_rag(self):
@@ -210,9 +215,9 @@ class MasterOrchestrator:
         location: str,
         patient_profile: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Execute NER + Triage Agent."""
+        """Execute NER + Triage Agent with LLM clinical mapping fallback."""
         severity = self.severity_classifier.classify(query)
-        
+
         # GraphRAG for procedure and ICD-10 (optional - works without Neo4j)
         rag_result = None
         if self.graph_rag:
@@ -221,39 +226,82 @@ class MasterOrchestrator:
             except Exception as e:
                 logger.warning(f"GraphRAG query failed in NER: {e}")
                 rag_result = None
-        
+
+        # Check if GraphRAG returned complete data
+        has_complete_data = (
+            rag_result
+            and rag_result.get("procedure")
+            and rag_result.get("icd10")
+            and rag_result.get("icd10", {}).get("code")
+        )
+
         # Get city tier
         city_tier = 2
         if location:
             city_tier = self.geo_engine.get_city_tier(location)
-        
+
         # Extract budget from query
         budget_inr = self._extract_budget(query)
-        
-        # Handle None result - ensure rag_result is a dict
-        if rag_result is None:
-            rag_result = {}
-        
-        # Safely extract ICD-10 data
+
+        # If incomplete data, use Clinical Mapping Agent via LLM
+        if not has_complete_data:
+            logger.info(f"Incomplete GraphRAG data, using LLM clinical mapping for: {query[:50]}...")
+            clinical_mapping = self.clinical_mapping_agent.map_query(query)
+
+            triage_result = {
+                "agent": "ner_triage",
+                "canonical_procedure": clinical_mapping.procedure,
+                "category": clinical_mapping.category,
+                "icd10": clinical_mapping.icd10_code,
+                "icd10_label": clinical_mapping.icd10_label,
+                "snomed_ct": clinical_mapping.snomed_code,
+                "city": location,
+                "city_tier": int(city_tier) if city_tier else 2,
+                "budget_inr": budget_inr,
+                "triage": severity,
+                "mapping_confidence": clinical_mapping.confidence,
+                "confidence_factors": clinical_mapping.confidence_factors,
+                "mapping_rationale": clinical_mapping.mapping_rationale,
+                "extracted_comorbidities": patient_profile.get("comorbidities", []),
+                "clinical_mapping_source": "llm_agent",
+            }
+            return triage_result
+
+        # Use GraphRAG data (complete)
         icd10_data = rag_result.get("icd10") or {}
-        
+
         # Convert city_tier to int if it's a string
         if isinstance(city_tier, str):
             tier_map = {"metro": 1, "tier1": 1, "tier2": 2, "tier3": 3}
             city_tier = tier_map.get(city_tier.lower(), 2)
-        
+
+        # Check if SNOMED is missing and try to get from LLM
+        snomed = icd10_data.get("snomed_code", "")
+        if not snomed:
+            try:
+                llm_mapping = self.clinical_mapping_agent.map_query(query)
+                snomed = llm_mapping.snomed_code
+            except Exception as e:
+                logger.warning(f"Failed to get SNOMED from LLM: {e}")
+
         triage_result = {
             "agent": "ner_triage",
             "canonical_procedure": rag_result.get("procedure") or "",
-            "category": rag_result.get("medical_category") or "",
-            "icd10": icd10_data.get("code", "") if isinstance(icd10_data, dict) else str(icd10_data),
-            "snomed_ct": icd10_data.get("snomed_code", "") if isinstance(icd10_data, dict) else "",
+            "category": rag_result.get("medical_category") or icd10_data.get("category", "General Medicine"),
+            "icd10": icd10_data.get("code", ""),
+            "icd10_label": icd10_data.get("label", ""),
+            "snomed_ct": snomed,
             "city": location,
             "city_tier": int(city_tier) if city_tier else 2,
             "budget_inr": budget_inr,
             "triage": severity,
-            "mapping_confidence": rag_result.get("mapping_confidence", 70),
+            "mapping_confidence": rag_result.get("confidence_score", 0.7),
+            "confidence_factors": [
+                {"key": "kg_match", "label": "Knowledge graph match", "score": 85},
+                {"key": "icd_mapping", "label": "ICD-10 mapping", "score": 80},
+            ],
             "extracted_comorbidities": patient_profile.get("comorbidities", []),
+            "clinical_mapping_source": "knowledge_graph",
         }
 
         return triage_result
@@ -314,6 +362,13 @@ class MasterOrchestrator:
                 "cost_max": step_dict.get("cost_max", 0) if isinstance(step_dict, dict) else 0,
             })
         
+        # Get clinical phases with LLM explanations
+        clinical_phases = self.pathway_engine.get_clinical_phases(
+            procedure=procedure,
+            pathway_steps=pathway_steps,
+            icd10_code=""
+        )
+        
         # Get comorbidity impacts
         comorbidity_impacts = []
         for condition in comorbidities:
@@ -328,6 +383,7 @@ class MasterOrchestrator:
         return {
             "agent": "clinical_pathway",
             "pathway_steps": pathway_steps,
+            "clinical_phases": clinical_phases,
             "total_min": final_cost.get("min", 0),
             "total_max": final_cost.get("max", 0),
             "comorbidity_impacts": comorbidity_impacts,
@@ -354,6 +410,29 @@ class MasterOrchestrator:
                 logger.warning(f"GraphRAG query failed: {e}")
                 hospitals_raw = []
         
+        # If no hospitals from GraphRAG, fetch from hospital search service
+        if not hospitals_raw:
+            try:
+                from app.services.hospital_search import search_hospitals, HospitalSearchRequest
+                request = HospitalSearchRequest(
+                    location=city,
+                    limit=5,
+                    min_rating=3.0,
+                )
+                hospitals_result = search_hospitals(request)
+                # Convert Hospital objects to dicts and extract coordinates
+                hospitals_raw = []
+                for h in hospitals_result:
+                    h_dict = h.dict() if hasattr(h, 'dict') else h
+                    # Extract coordinates from nested object to top-level lat/lon for fusion engine
+                    coords = h_dict.get('coordinates', {})
+                    h_dict['lat'] = coords.get('lat', 0)
+                    h_dict['lon'] = coords.get('lng', 0)  # fusion engine uses 'lon'
+                    hospitals_raw.append(h_dict)
+            except Exception as e:
+                logger.warning(f"Hospital search failed: {e}")
+                hospitals_raw = []
+        
         # Score and rank hospitals
         hospitals_scored = self.fusion_engine.score_and_rank(
             hospitals=hospitals_raw,
@@ -363,11 +442,22 @@ class MasterOrchestrator:
             budget_max=budget_inr,
         )
         
+        # Ensure scored hospitals have lat/lng at top level for markers and frontend
+        hospitals_normalized = []
+        for h in hospitals_scored:
+            h_copy = dict(h)
+            # Ensure lat/lng are at top level (fusion engine uses 'lon', we need 'lng' for frontend)
+            if 'lat' not in h_copy or h_copy.get('lat', 0) == 0:
+                h_copy['lat'] = h_copy.get('coordinates', {}).get('lat', 0)
+            if 'lng' not in h_copy or h_copy.get('lng', 0) == 0:
+                h_copy['lng'] = h_copy.get('lon', 0) or h_copy.get('coordinates', {}).get('lng', 0)
+            hospitals_normalized.append(h_copy)
+        
         return {
             "agent": "hospital_discovery",
-            "result_count": len(hospitals_scored),
-            "hospitals": hospitals_scored,
-            "map_markers": self._extract_markers(hospitals_scored),
+            "result_count": len(hospitals_normalized),
+            "hospitals": hospitals_normalized,
+            "map_markers": self._extract_markers(hospitals_normalized),
         }
 
     def _extract_markers(self, hospitals: List[Dict]) -> List[Dict]:

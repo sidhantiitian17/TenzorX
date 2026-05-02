@@ -5,11 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Send, MapPin, User, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatINRShort } from '@/lib/formatters';
+import type { PatientProfile } from '@/types';
 
 interface InputBarProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   onOpenProfile?: () => void;
+  patientProfile?: PatientProfile | null;
 }
 
 const MAX_CHARS = 500;
@@ -19,6 +22,7 @@ export function InputBar({
   onSend,
   isLoading,
   onOpenProfile,
+  patientProfile,
 }: InputBarProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -131,22 +135,25 @@ export function InputBar({
           </div>
         </div>
 
-        {/* Filter chips - all open the profile modal */}
+        {/* Filter chips - show actual values when set, open profile modal on click */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <FilterChip
             icon={MapPin}
-            label="Add Location"
+            label={patientProfile?.location || 'Add Location'}
             onClick={onOpenProfile}
+            active={!!patientProfile?.location}
           />
           <FilterChip
             icon={User}
-            label="Patient Details"
+            label={patientProfile?.age ? `${patientProfile.age} yrs${patientProfile?.gender ? ` · ${patientProfile.gender.charAt(0).toUpperCase()}` : ''}` : 'Patient Details'}
             onClick={onOpenProfile}
+            active={!!patientProfile?.age || !!(patientProfile?.comorbidities && patientProfile.comorbidities.length > 0)}
           />
           <FilterChip
             icon={Wallet}
-            label="Set Budget"
+            label={patientProfile?.budget_max ? formatINRShort(patientProfile.budget_max) + ' budget' : 'Set Budget'}
             onClick={onOpenProfile}
+            active={!!patientProfile?.budget_max}
           />
         </div>
       </div>

@@ -60,18 +60,29 @@ class XAIExplainerOutput(BaseModel):
 # NER + Triage Agent Output
 # ============================================================================
 
+class ConfidenceFactor(BaseModel):
+    """Confidence factor for clinical mapping"""
+    key: str
+    label: str
+    score: int
+
+
 class NERTriageOutput(BaseModel):
     """NER + Triage Agent output per instructionagent.md Section 3.1"""
     agent: str = "ner_triage"
     canonical_procedure: str
     category: str
     icd10: str
+    icd10_label: Optional[str] = None
     snomed_ct: str
     city: str
     city_tier: int
     budget_inr: Optional[int] = None
     triage: Literal["RED", "YELLOW", "GREEN"]
-    mapping_confidence: int
+    mapping_confidence: float
+    confidence_factors: Optional[List[ConfidenceFactor]] = None
+    mapping_rationale: Optional[str] = None
+    clinical_mapping_source: Optional[str] = None  # "knowledge_graph" or "llm_agent"
     extracted_comorbidities: List[str]
 
 
@@ -95,10 +106,24 @@ class ComorbidityImpact(BaseModel):
     add_max: int
 
 
+class ClinicalPhaseDetail(BaseModel):
+    """Detailed clinical phase with LLM explanation"""
+    phase: Literal["consultation", "diagnostics", "procedure", "observation_stay", "follow_up_medication"]
+    name: str
+    description: str
+    activities: List[str]
+    cost_min: int
+    cost_max: int
+    duration: str
+    responsible_party: str
+    llm_explanation: str
+
+
 class ClinicalPathwayOutput(BaseModel):
     """Clinical Pathway Agent output per instructionagent.md Section 3.2"""
     agent: str = "clinical_pathway"
     pathway_steps: List[PathwayStep]
+    clinical_phases: List[ClinicalPhaseDetail] = []
     total_min: int
     total_max: int
     comorbidity_impacts: List[ComorbidityImpact]

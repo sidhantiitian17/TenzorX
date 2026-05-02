@@ -10,6 +10,7 @@ import type {
   PathwayStep,
   SearchData,
 } from '@/types';
+import { detectProcedureRealtime, getCachedResult, setCachedResult } from './procedureDetection';
 
 const DATA_SOURCES = [
   'NHA procedure benchmark categories',
@@ -66,6 +67,20 @@ const pathwayByProcedure: Record<string, PathwayStep[]> = {
     { step: 3, name: 'Tumor board treatment planning', duration: '1-2 days', cost_range: { min: 10000, max: 30000 } },
     { step: 4, name: 'Initial treatment cycle', duration: '3-7 days', cost_range: { min: 90000, max: 220000 } },
     { step: 5, name: 'Follow-up and supportive care', duration: '2-4 weeks', cost_range: { min: 12000, max: 40000 } },
+  ],
+  'Diabetes Mellitus Management': [
+    { step: 1, name: 'Endocrinology consultation', duration: '1 day', cost_range: { min: 500, max: 2000 } },
+    { step: 2, name: 'Diagnostic tests (HbA1c, lipid profile)', duration: '1 day', cost_range: { min: 800, max: 2500 } },
+    { step: 3, name: 'Treatment plan & medication', duration: '1 day', cost_range: { min: 1000, max: 5000 } },
+    { step: 4, name: 'Dietary counseling', duration: '1 day', cost_range: { min: 500, max: 1500 } },
+    { step: 5, name: 'Regular follow-up', duration: 'ongoing', cost_range: { min: 300, max: 1000 } },
+  ],
+  'Nephrolithiasis Treatment': [
+    { step: 1, name: 'Urology consultation', duration: '1 day', cost_range: { min: 500, max: 2000 } },
+    { step: 2, name: 'Imaging (CT/Ultrasound)', duration: '1 day', cost_range: { min: 2000, max: 5000 } },
+    { step: 3, name: 'Treatment (ESWL/URS/PCNL)', duration: '1-2 days', cost_range: { min: 30000, max: 80000 } },
+    { step: 4, name: 'Post-procedure care', duration: '1-2 days', cost_range: { min: 3000, max: 8000 } },
+    { step: 5, name: 'Follow-up & prevention', duration: '1-2 weeks', cost_range: { min: 500, max: 1500 } },
   ],
 };
 
@@ -143,6 +158,20 @@ const procedureCatalog = {
     snomed: '363346000',
     category: 'Oncology',
   },
+  diabetes: {
+    procedure: 'Diabetes Mellitus Management',
+    icd10: 'E11.9',
+    icd10Label: 'Type 2 diabetes mellitus without complications',
+    snomed: '44054006',
+    category: 'Endocrinology',
+  },
+  kidneyStone: {
+    procedure: 'Nephrolithiasis Treatment',
+    icd10: 'N20.0',
+    icd10Label: 'Calculus of kidney',
+    snomed: '9557008',
+    category: 'Urology',
+  },
 } as const;
 
 const tierMultiplier: Record<Hospital['tier'], number> = {
@@ -191,6 +220,22 @@ const baseBreakdown: Record<string, CostBreakdown> = {
     diagnostics: { min: 20000, max: 45000 },
     medicines: { min: 15000, max: 50000 },
     contingency: { min: 10000, max: 30000 },
+  },
+  'Diabetes Mellitus Management': {
+    procedure: { min: 3000, max: 10000 },
+    doctor_fees: { min: 500, max: 2000 },
+    hospital_stay: { min: 0, max: 0, nights: '0' },
+    diagnostics: { min: 800, max: 2500 },
+    medicines: { min: 1000, max: 5000 },
+    contingency: { min: 500, max: 1500 },
+  },
+  'Nephrolithiasis Treatment': {
+    procedure: { min: 30000, max: 80000 },
+    doctor_fees: { min: 3000, max: 8000 },
+    hospital_stay: { min: 3000, max: 8000, nights: '1-2' },
+    diagnostics: { min: 2000, max: 5000 },
+    medicines: { min: 1500, max: 4000 },
+    contingency: { min: 2000, max: 5000 },
   },
 };
 
@@ -609,6 +654,137 @@ export const mockHospitals: Hospital[] = [
     reviews: [{ id: 'r-011', sentiment: 'positive', excerpt: 'Budget-friendly and responsive staff.' }],
     coordinates: { lat: 25.5941, lng: 85.1376 },
   },
+  {
+    id: 'h-bangalore-1',
+    name: 'Bangalore Heart Institute',
+    location: 'Koramangala, Bangalore, Karnataka',
+    city: 'Bangalore',
+    distance_km: 4.2,
+    rating: 4.7,
+    review_count: 423,
+    tier: 'premium',
+    nabh_accredited: true,
+    specializations: ['Cardiology', 'Cardiac Surgery', 'Interventional Cardiology'],
+    strengths: ['Leading cardiac center', 'Advanced cath lab', '24/7 emergency cardiac care'],
+    risk_flags: ['Premium pricing for advanced procedures'],
+    cost_range: { min: 280000, max: 450000 },
+    doctors: [
+      { id: 'd-101', name: 'Dr. Rajesh Kumar', specialization: 'Interventional Cardiology', experience_years: 18, rating: 4.8, fee_min: 2500, fee_max: 4500 },
+      { id: 'd-102', name: 'Dr. Suman Rao', specialization: 'Cardiac Surgery', experience_years: 16, rating: 4.7, fee_min: 3000, fee_max: 5000 },
+    ],
+    reviews: [
+      { id: 'r-101', sentiment: 'positive', excerpt: 'Excellent cardiac care and modern facilities.' },
+      { id: 'r-102', sentiment: 'positive', excerpt: 'Doctors explained the angioplasty procedure clearly.' },
+    ],
+    coordinates: { lat: 12.9352, lng: 77.6245 },
+    rank_score: 94,
+    rank_signals: {
+      clinical_capability: 96,
+      reputation: 92,
+      accessibility: 85,
+      affordability: 68,
+    },
+    sentiment_data: {
+      positive_pct: 88,
+      themes: [
+        { theme: 'Cardiac outcomes', mentions: 142, positive_pct: 91 },
+        { theme: 'Doctor expertise', mentions: 98, positive_pct: 89 },
+        { theme: 'Emergency response', mentions: 76, positive_pct: 87 },
+      ],
+      sample_quotes: [
+        { text: 'Life-saving cardiac care during emergency.', sentiment: 'positive' },
+      ],
+    },
+    procedure_volume: 'high',
+    icu_available: true,
+    wait_time_days: 2,
+  },
+  {
+    id: 'h-bangalore-2',
+    name: 'City Cardiac Care Center',
+    location: 'Whitefield, Bangalore, Karnataka',
+    city: 'Bangalore',
+    distance_km: 8.5,
+    rating: 4.3,
+    review_count: 267,
+    tier: 'mid',
+    nabh_accredited: true,
+    specializations: ['Cardiology', 'Internal Medicine'],
+    strengths: ['Affordable cardiac packages', 'NABH accredited', 'Good post-procedure support'],
+    risk_flags: ['Limited complex cardiac surgery'],
+    cost_range: { min: 150000, max: 280000 },
+    doctors: [
+      { id: 'd-103', name: 'Dr. Anitha Reddy', specialization: 'Cardiology', experience_years: 12, rating: 4.4, fee_min: 1200, fee_max: 2200 },
+    ],
+    reviews: [
+      { id: 'r-103', sentiment: 'positive', excerpt: 'Good value for cardiac consultation and tests.' },
+      { id: 'r-104', sentiment: 'neutral', excerpt: 'Clean facility but can get crowded.' },
+    ],
+    coordinates: { lat: 12.9698, lng: 77.7499 },
+    rank_score: 82,
+    rank_signals: {
+      clinical_capability: 80,
+      reputation: 78,
+      accessibility: 88,
+      affordability: 82,
+    },
+    sentiment_data: {
+      positive_pct: 76,
+      themes: [
+        { theme: 'Cardiac care', mentions: 68, positive_pct: 78 },
+        { theme: 'Cost transparency', mentions: 52, positive_pct: 74 },
+      ],
+      sample_quotes: [
+        { text: 'Affordable angiography package.', sentiment: 'positive' },
+      ],
+    },
+    procedure_volume: 'medium',
+    icu_available: true,
+    wait_time_days: 3,
+  },
+  {
+    id: 'h-bangalore-3',
+    name: 'Bangalore General & Heart Hospital',
+    location: 'Jayanagar, Bangalore, Karnataka',
+    city: 'Bangalore',
+    distance_km: 6.3,
+    rating: 4.0,
+    review_count: 189,
+    tier: 'budget',
+    nabh_accredited: false,
+    specializations: ['General Medicine', 'Cardiology', 'Emergency Care'],
+    strengths: ['Lowest cost cardiac care', 'Quick appointments', 'Budget-friendly packages'],
+    risk_flags: ['Basic ICU facilities', 'Limited specialist availability'],
+    cost_range: { min: 90000, max: 180000 },
+    doctors: [
+      { id: 'd-104', name: 'Dr. Venkat Iyer', specialization: 'General Cardiology', experience_years: 9, rating: 4.1, fee_min: 800, fee_max: 1500 },
+    ],
+    reviews: [
+      { id: 'r-105', sentiment: 'positive', excerpt: 'Budget option for heart checkups and basic procedures.' },
+      { id: 'r-106', sentiment: 'neutral', excerpt: 'Good basic care, limited advanced equipment.' },
+    ],
+    coordinates: { lat: 12.9308, lng: 77.5838 },
+    rank_score: 74,
+    rank_signals: {
+      clinical_capability: 72,
+      reputation: 70,
+      accessibility: 82,
+      affordability: 90,
+    },
+    sentiment_data: {
+      positive_pct: 68,
+      themes: [
+        { theme: 'Affordable care', mentions: 42, positive_pct: 72 },
+        { theme: 'Basic services', mentions: 35, positive_pct: 65 },
+      ],
+      sample_quotes: [
+        { text: 'Made cardiac treatment possible within our budget.', sentiment: 'positive' },
+      ],
+    },
+    procedure_volume: 'low',
+    icu_available: true,
+    wait_time_days: 1,
+  },
 ];
 
 function detectProcedure(query: string): (typeof procedureCatalog)[keyof typeof procedureCatalog] {
@@ -617,6 +793,8 @@ function detectProcedure(query: string): (typeof procedureCatalog)[keyof typeof 
   if (q.includes('cancer') || q.includes('oncology') || q.includes('tumor') || q.includes('chemo') || q.includes('chemotherapy')) return procedureCatalog.cancer;
   if (q.includes('bypass') || q.includes('cabg')) return procedureCatalog.cabg;
   if (q.includes('cataract')) return procedureCatalog.cataract;
+  if (q.includes('diabetes') || q.includes('diabetic') || q.includes('blood sugar')) return procedureCatalog.diabetes;
+  if (q.includes('kidney stone') || q.includes('kidney stones') || q.includes('nephrolithiasis') || q.includes('renal stone')) return procedureCatalog.kidneyStone;
   return procedureCatalog.angioplasty;
 }
 
@@ -643,11 +821,48 @@ function isHospitalRelevantToProcedure(
   if (procedure.category === 'Ophthalmology') {
     return ['eye', 'ophthal', 'cataract'].some((keyword) => haystack.includes(keyword));
   }
+  if (procedure.category === 'Endocrinology') {
+    return ['endo', 'diabetes', 'hormone', 'thyroid', 'metabolic'].some((keyword) => haystack.includes(keyword));
+  }
+  if (procedure.category === 'Urology') {
+    return ['urology', 'urologist', 'kidney', 'stone', 'renal', 'urinary'].some((keyword) => haystack.includes(keyword));
+  }
   return true;
 }
 
-export function generateMockSearchData(query: string, location: string): SearchData {
-  const procedure = detectProcedure(query);
+export async function generateMockSearchData(query: string, location: string): Promise<SearchData> {
+  // Try real-time procedure detection first
+  let realtimeMapping = await detectProcedureRealtime(query);
+  
+  // If real-time detection succeeded with high confidence, use it
+  let procedure: (typeof procedureCatalog)[keyof typeof procedureCatalog];
+  let useRealtimeData = false;
+  
+  if (realtimeMapping && realtimeMapping.confidence >= 0.6) {
+    // Check if we have this procedure in our catalog
+    const catalogMatch = Object.values(procedureCatalog).find(
+      p => p.procedure === realtimeMapping!.procedure || 
+           p.icd10 === realtimeMapping!.icd10_code
+    );
+    
+    if (catalogMatch) {
+      procedure = catalogMatch;
+    } else {
+      // Use the real-time detected data but fall back to angioplasty base
+      procedure = {
+        procedure: realtimeMapping.procedure,
+        icd10: realtimeMapping.icd10_code,
+        icd10Label: realtimeMapping.icd10_label,
+        snomed: realtimeMapping.snomed_code,
+        category: realtimeMapping.category,
+      } as (typeof procedureCatalog)[keyof typeof procedureCatalog];
+      useRealtimeData = true;
+    }
+  } else {
+    // Fall back to hardcoded detection
+    procedure = detectProcedure(query);
+  }
+  
   const base = baseBreakdown[procedure.procedure] ?? baseBreakdown.Angioplasty;
   const overallConfidence = 0.74;
 
@@ -718,17 +933,29 @@ export function generateMockSearchData(query: string, location: string): SearchD
   const total = buildTotal(breakdown);
   const mappingConfidence = 0.86;
 
-  const clinicalMapping: ClinicalMapping = {
-    user_query: query,
-    procedure: procedure.procedure,
-    icd10_code: procedure.icd10,
-    icd10_label: procedure.icd10Label,
-    snomed_code: procedure.snomed,
-    category: procedure.category,
-    pathway: pathwayByProcedure[procedure.procedure] ?? pathwayByProcedure.Angioplasty,
-    confidence: mappingConfidence,
-    confidence_factors: confidenceFactors,
-  };
+  const clinicalMapping: ClinicalMapping = useRealtimeData && realtimeMapping
+    ? {
+        user_query: query,
+        procedure: procedure.procedure,
+        icd10_code: procedure.icd10,
+        icd10_label: procedure.icd10Label,
+        snomed_code: procedure.snomed,
+        category: procedure.category,
+        pathway: [], // No pathway for unknown procedures
+        confidence: realtimeMapping.confidence,
+        confidence_factors: realtimeMapping.confidence_factors,
+      }
+    : {
+        user_query: query,
+        procedure: procedure.procedure,
+        icd10_code: procedure.icd10,
+        icd10_label: procedure.icd10Label,
+        snomed_code: procedure.snomed,
+        category: procedure.category,
+        pathway: pathwayByProcedure[procedure.procedure] ?? pathwayByProcedure.Angioplasty,
+        confidence: mappingConfidence,
+        confidence_factors: confidenceFactors,
+      };
 
   return {
     procedure: procedure.procedure,

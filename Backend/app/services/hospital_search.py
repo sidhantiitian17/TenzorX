@@ -438,6 +438,838 @@ class HospitalSearchService:
                 procedure_volume="medium",
                 icu_available=True,
                 wait_time_days=3
+            ),
+            # Bangalore Hospitals
+            Hospital(
+                id="h-fortis-bangalore",
+                name="Fortis Hospital Bangalore",
+                location="Cunningham Road, Bangalore, Karnataka 560052",
+                city="Bangalore",
+                distance_km=3.5,
+                rating=4.6,
+                review_count=312,
+                tier="premium",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Cardiac Surgery", "Orthopedics", "Neurology"],
+                strengths=["Leading cardiac center", "Advanced cath lab", "24/7 emergency cardiac care"],
+                risk_flags=["Premium pricing for advanced procedures"],
+                cost_range={"min": 280000, "max": 450000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-ft-001",
+                        name="Dr. Rajesh Kumar",
+                        specialization="Interventional Cardiology",
+                        experience_years=18,
+                        rating=4.8,
+                        fee_min=2500,
+                        fee_max=4500
+                    ),
+                    HospitalDoctor(
+                        id="d-ft-002",
+                        name="Dr. Suman Rao",
+                        specialization="Cardiac Surgery",
+                        experience_years=16,
+                        rating=4.7,
+                        fee_min=3000,
+                        fee_max=5000
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-ft-001",
+                        sentiment="positive",
+                        excerpt="Excellent cardiac care and modern facilities."
+                    ),
+                    HospitalReview(
+                        id="r-ft-002",
+                        sentiment="positive",
+                        excerpt="Doctors explained the angioplasty procedure clearly."
+                    )
+                ],
+                coordinates={"lat": 12.9850, "lng": 77.5957},
+                rank_score=94,
+                rank_signals=RankSignals(
+                    clinical_capability=96,
+                    reputation=92,
+                    accessibility=85,
+                    affordability=68
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=88,
+                    themes=[
+                        {"theme": "Cardiac outcomes", "mentions": 142, "positive_pct": 91},
+                        {"theme": "Doctor expertise", "mentions": 98, "positive_pct": 89},
+                        {"theme": "Emergency response", "mentions": 76, "positive_pct": 87}
+                    ],
+                    sample_quotes=[
+                        {"text": "Life-saving cardiac care during emergency.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=2
+            ),
+            Hospital(
+                id="h-manipal-bangalore",
+                name="Manipal Hospital Whitefield",
+                location="Whitefield, Bangalore, Karnataka 560066",
+                city="Bangalore",
+                distance_km=8.2,
+                rating=4.4,
+                review_count=267,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Internal Medicine", "Orthopedics"],
+                strengths=["Affordable cardiac packages", "NABH accredited", "Good post-procedure support"],
+                risk_flags=["Limited complex cardiac surgery"],
+                cost_range={"min": 150000, "max": 280000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-mp-001",
+                        name="Dr. Anitha Reddy",
+                        specialization="Cardiology",
+                        experience_years=12,
+                        rating=4.4,
+                        fee_min=1200,
+                        fee_max=2200
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-mp-001",
+                        sentiment="positive",
+                        excerpt="Good value for cardiac consultation and tests."
+                    )
+                ],
+                coordinates={"lat": 12.9698, "lng": 77.7499},
+                rank_score=87,
+                rank_signals=RankSignals(
+                    clinical_capability=86,
+                    reputation=82,
+                    accessibility=88,
+                    affordability=85
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=82,
+                    themes=[
+                        {"theme": "Cardiac care", "mentions": 68, "positive_pct": 84},
+                        {"theme": "Cost transparency", "mentions": 52, "positive_pct": 81}
+                    ],
+                    sample_quotes=[
+                        {"text": "Affordable angiography package.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="medium",
+                icu_available=True,
+                wait_time_days=3
+            ),
+            Hospital(
+                id="h-bgs-bangalore",
+                name="BGS Gleneagles Global Hospital",
+                location="Kengeri, Bangalore, Karnataka 560060",
+                city="Bangalore",
+                distance_km=12.5,
+                rating=4.2,
+                review_count=189,
+                tier="budget",
+                nabh_accredited=True,
+                specializations=["Cardiology", "General Medicine", "Emergency Care"],
+                strengths=["Lowest cost cardiac care", "Quick appointments", "Budget-friendly packages"],
+                risk_flags=["Basic ICU facilities", "Limited specialist availability"],
+                cost_range={"min": 90000, "max": 180000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-bg-001",
+                        name="Dr. Venkat Iyer",
+                        specialization="General Cardiology",
+                        experience_years=9,
+                        rating=4.1,
+                        fee_min=800,
+                        fee_max=1500
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-bg-001",
+                        sentiment="positive",
+                        excerpt="Budget option for heart checkups and basic procedures."
+                    )
+                ],
+                coordinates={"lat": 12.9083, "lng": 77.4849},
+                rank_score=79,
+                rank_signals=RankSignals(
+                    clinical_capability=78,
+                    reputation=75,
+                    accessibility=72,
+                    affordability=94
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=73,
+                    themes=[
+                        {"theme": "Affordable care", "mentions": 42, "positive_pct": 78},
+                        {"theme": "Basic services", "mentions": 35, "positive_pct": 71}
+                    ],
+                    sample_quotes=[
+                        {"text": "Made cardiac treatment possible within our budget.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="low",
+                icu_available=True,
+                wait_time_days=1
+            ),
+            # Mumbai Hospitals
+            Hospital(
+                id="h-kokilaben-mumbai",
+                name="Kokilaben Dhirubhai Ambani Hospital",
+                location="Andheri West, Mumbai, Maharashtra 400053",
+                city="Mumbai",
+                distance_km=5.8,
+                rating=4.7,
+                review_count=456,
+                tier="premium",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Oncology", "Neurology", "Orthopedics"],
+                strengths=["World-class facilities", "Renowned specialists", "Comprehensive care"],
+                risk_flags=["Premium pricing", "High demand"],
+                cost_range={"min": 350000, "max": 600000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-ka-001",
+                        name="Dr. Suresh Joshi",
+                        specialization="Cardiac Surgery",
+                        experience_years=20,
+                        rating=4.9,
+                        fee_min=4000,
+                        fee_max=7000
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-ka-001",
+                        sentiment="positive",
+                        excerpt="Exceptional care and world-class infrastructure."
+                    )
+                ],
+                coordinates={"lat": 19.1307, "lng": 72.8299},
+                rank_score=96,
+                rank_signals=RankSignals(
+                    clinical_capability=98,
+                    reputation=95,
+                    accessibility=88,
+                    affordability=60
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=91,
+                    themes=[
+                        {"theme": "Clinical excellence", "mentions": 198, "positive_pct": 93},
+                        {"theme": "Facilities", "mentions": 156, "positive_pct": 89}
+                    ],
+                    sample_quotes=[
+                        {"text": "Best hospital experience in Mumbai.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=3
+            ),
+            Hospital(
+                id="h-lilavati-mumbai",
+                name="Lilavati Hospital",
+                location="Bandra West, Mumbai, Maharashtra 400050",
+                city="Mumbai",
+                distance_km=8.2,
+                rating=4.5,
+                review_count=378,
+                tier="premium",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Orthopedics", "Nephrology"],
+                strengths=["Trusted name", "Advanced technology", "Patient care"],
+                risk_flags=["Premium costs"],
+                cost_range={"min": 280000, "max": 500000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-lt-001",
+                        name="Dr. Priya Shah",
+                        specialization="Interventional Cardiology",
+                        experience_years=15,
+                        rating=4.6,
+                        fee_min=3000,
+                        fee_max=5500
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-lt-001",
+                        sentiment="positive",
+                        excerpt="Renowned hospital with excellent cardiac care."
+                    )
+                ],
+                coordinates={"lat": 19.0530, "lng": 72.8327},
+                rank_score=92,
+                rank_signals=RankSignals(
+                    clinical_capability=94,
+                    reputation=93,
+                    accessibility=85,
+                    affordability=68
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=87,
+                    themes=[
+                        {"theme": "Cardiac care", "mentions": 134, "positive_pct": 89},
+                        {"theme": "Technology", "mentions": 98, "positive_pct": 85}
+                    ],
+                    sample_quotes=[
+                        {"text": "Trustworthy care for complex cardiac procedures.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=2
+            ),
+            # Delhi Hospitals
+            Hospital(
+                id="h-aiims-delhi",
+                name="AIIMS Delhi",
+                location="Ansari Nagar, New Delhi 110029",
+                city="Delhi",
+                distance_km=6.5,
+                rating=4.8,
+                review_count=523,
+                tier="budget",
+                nabh_accredited=True,
+                specializations=["All Specialties", "Cardiology", "Oncology", "Neurology"],
+                strengths=["Government subsidized rates", "Top doctors", "Research excellence"],
+                risk_flags=["Long waiting times", "Limited amenities"],
+                cost_range={"min": 50000, "max": 150000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-ai-001",
+                        name="Dr. Ramesh Gupta",
+                        specialization="Cardiology",
+                        experience_years=22,
+                        rating=4.9,
+                        fee_min=500,
+                        fee_max=1000
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-ai-001",
+                        sentiment="positive",
+                        excerpt="Best value for money. World-class doctors at affordable rates."
+                    )
+                ],
+                coordinates={"lat": 28.5672, "lng": 77.2100},
+                rank_score=95,
+                rank_signals=RankSignals(
+                    clinical_capability=98,
+                    reputation=97,
+                    accessibility=75,
+                    affordability=95
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=89,
+                    themes=[
+                        {"theme": "Doctor expertise", "mentions": 234, "positive_pct": 94},
+                        {"theme": "Affordability", "mentions": 187, "positive_pct": 91}
+                    ],
+                    sample_quotes=[
+                        {"text": "Best doctors in India at minimal cost.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=14
+            ),
+            Hospital(
+                id="h-fortis-escorts-delhi",
+                name="Fortis Escorts Heart Institute",
+                location="Okhla Road, New Delhi 110025",
+                city="Delhi",
+                distance_km=9.2,
+                rating=4.6,
+                review_count=412,
+                tier="premium",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Cardiac Surgery", "Electrophysiology"],
+                strengths=["Cardiac excellence", "Advanced interventions", "Pioneer in heart care"],
+                risk_flags=["Premium cardiac pricing"],
+                cost_range={"min": 300000, "max": 550000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-fe-001",
+                        name="Dr. Ashok Seth",
+                        specialization="Interventional Cardiology",
+                        experience_years=25,
+                        rating=4.9,
+                        fee_min=5000,
+                        fee_max=8000
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-fe-001",
+                        sentiment="positive",
+                        excerpt="Premier cardiac institute with exceptional outcomes."
+                    )
+                ],
+                coordinates={"lat": 28.5607, "lng": 77.2745},
+                rank_score=97,
+                rank_signals=RankSignals(
+                    clinical_capability=98,
+                    reputation=96,
+                    accessibility=82,
+                    affordability=62
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=90,
+                    themes=[
+                        {"theme": "Cardiac care", "mentions": 245, "positive_pct": 93},
+                        {"theme": "Technology", "mentions": 167, "positive_pct": 91}
+                    ],
+                    sample_quotes=[
+                        {"text": "Best heart hospital in North India.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=4
+            ),
+            # Hyderabad Hospitals
+            Hospital(
+                id="h-care-hyderabad",
+                name="CARE Hospitals Banjara Hills",
+                location="Banjara Hills, Hyderabad, Telangana 500034",
+                city="Hyderabad",
+                distance_km=4.3,
+                rating=4.5,
+                review_count=298,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Neurology", "Orthopedics"],
+                strengths=["Affordable quality", "Good success rates", "Patient care"],
+                risk_flags=["Peak hour congestion"],
+                cost_range={"min": 140000, "max": 260000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-ch-001",
+                        name="Dr. Kiran Kumar",
+                        specialization="Cardiology",
+                        experience_years=16,
+                        rating=4.6,
+                        fee_min=1800,
+                        fee_max=3200
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-ch-001",
+                        sentiment="positive",
+                        excerpt="Reliable cardiac care at reasonable prices."
+                    )
+                ],
+                coordinates={"lat": 17.4126, "lng": 78.4383},
+                rank_score=88,
+                rank_signals=RankSignals(
+                    clinical_capability=87,
+                    reputation=85,
+                    accessibility=88,
+                    affordability=84
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=83,
+                    themes=[
+                        {"theme": "Value for money", "mentions": 89, "positive_pct": 86},
+                        {"theme": "Cardiac outcomes", "mentions": 76, "positive_pct": 84}
+                    ],
+                    sample_quotes=[
+                        {"text": "Quality care without breaking the bank.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=3
+            ),
+            Hospital(
+                id="h-yashoda-hyderabad",
+                name="Yashoda Hospitals Secunderabad",
+                location="Secunderabad, Hyderabad, Telangana 500003",
+                city="Hyderabad",
+                distance_km=7.8,
+                rating=4.3,
+                review_count=245,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Oncology", "Nephrology"],
+                strengths=["Multi-specialty care", "Advanced facilities", "Accessibility"],
+                risk_flags=["Higher costs for complex cases"],
+                cost_range={"min": 160000, "max": 300000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-yh-001",
+                        name="Dr. Kavita Sharma",
+                        specialization="Cardiology",
+                        experience_years=14,
+                        rating=4.4,
+                        fee_min=2000,
+                        fee_max=3500
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-yh-001",
+                        sentiment="positive",
+                        excerpt="Good cardiac facilities and caring staff."
+                    )
+                ],
+                coordinates={"lat": 17.4399, "lng": 78.4983},
+                rank_score=85,
+                rank_signals=RankSignals(
+                    clinical_capability=86,
+                    reputation=83,
+                    accessibility=90,
+                    affordability=78
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=80,
+                    themes=[
+                        {"theme": "Facilities", "mentions": 67, "positive_pct": 82},
+                        {"theme": "Staff care", "mentions": 54, "positive_pct": 79}
+                    ],
+                    sample_quotes=[
+                        {"text": "Well-equipped hospital with good doctors.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="medium",
+                icu_available=True,
+                wait_time_days=4
+            ),
+            # Chennai Hospitals
+            Hospital(
+                id="h-apollo-chennai",
+                name="Apollo Hospitals Greams Road",
+                location="Greams Road, Chennai, Tamil Nadu 600006",
+                city="Chennai",
+                distance_km=3.9,
+                rating=4.7,
+                review_count=387,
+                tier="premium",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Oncology", "Neurology", "Transplant"],
+                strengths=["Pioneer in healthcare", "Advanced technology", "Expert doctors"],
+                risk_flags=["Premium pricing"],
+                cost_range={"min": 320000, "max": 580000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-apc-001",
+                        name="Dr. Prathap Reddy",
+                        specialization="Cardiology",
+                        experience_years=28,
+                        rating=4.9,
+                        fee_min=4500,
+                        fee_max=7500
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-apc-001",
+                        sentiment="positive",
+                        excerpt="Flagship Apollo hospital with exceptional standards."
+                    )
+                ],
+                coordinates={"lat": 13.0524, "lng": 80.2518},
+                rank_score=96,
+                rank_signals=RankSignals(
+                    clinical_capability=98,
+                    reputation=97,
+                    accessibility=88,
+                    affordability=58
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=90,
+                    themes=[
+                        {"theme": "Medical excellence", "mentions": 187, "positive_pct": 93},
+                        {"theme": "Technology", "mentions": 134, "positive_pct": 90}
+                    ],
+                    sample_quotes=[
+                        {"text": "The gold standard for healthcare in South India.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=3
+            ),
+            Hospital(
+                id="h-fortis-malar-chennai",
+                name="Fortis Malar Hospital",
+                location="Adyar, Chennai, Tamil Nadu 600020",
+                city="Chennai",
+                distance_km=8.5,
+                rating=4.4,
+                review_count=234,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Pediatrics", "Orthopedics"],
+                strengths=["Quality cardiac care", "Patient-friendly", "Good outcomes"],
+                risk_flags=["Limited advanced procedures"],
+                cost_range={"min": 150000, "max": 280000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-fm-001",
+                        name="Dr. Suresh Kumar",
+                        specialization="Cardiology",
+                        experience_years=15,
+                        rating=4.5,
+                        fee_min=1800,
+                        fee_max=3200
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-fm-001",
+                        sentiment="positive",
+                        excerpt="Reliable hospital with good cardiac department."
+                    )
+                ],
+                coordinates={"lat": 13.0067, "lng": 80.2570},
+                rank_score=86,
+                rank_signals=RankSignals(
+                    clinical_capability=87,
+                    reputation=84,
+                    accessibility=85,
+                    affordability=80
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=82,
+                    themes=[
+                        {"theme": "Cardiac care", "mentions": 76, "positive_pct": 85},
+                        {"theme": "Patient experience", "mentions": 58, "positive_pct": 81}
+                    ],
+                    sample_quotes=[
+                        {"text": "Good care at reasonable prices in Chennai.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="medium",
+                icu_available=True,
+                wait_time_days=4
+            ),
+            # Pune Hospitals
+            Hospital(
+                id="h-sahyadri-pune",
+                name="Sahyadri Hospital Deccan",
+                location="Deccan Gymkhana, Pune, Maharashtra 411004",
+                city="Pune",
+                distance_km=2.8,
+                rating=4.3,
+                review_count=198,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Orthopedics", "Neurology"],
+                strengths=["Affordable quality", "Central location", "Patient care"],
+                risk_flags=["Parking challenges"],
+                cost_range={"min": 130000, "max": 240000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-sh-001",
+                        name="Dr. Ravi Patil",
+                        specialization="Cardiology",
+                        experience_years=13,
+                        rating=4.4,
+                        fee_min=1500,
+                        fee_max=2800
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-sh-001",
+                        sentiment="positive",
+                        excerpt="Good hospital with reasonable cardiac care costs."
+                    )
+                ],
+                coordinates={"lat": 18.5204, "lng": 73.8567},
+                rank_score=84,
+                rank_signals=RankSignals(
+                    clinical_capability=84,
+                    reputation=82,
+                    accessibility=90,
+                    affordability=86
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=80,
+                    themes=[
+                        {"theme": "Value care", "mentions": 67, "positive_pct": 83},
+                        {"theme": "Location", "mentions": 54, "positive_pct": 88}
+                    ],
+                    sample_quotes=[
+                        {"text": "Convenient location with good medical care.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="medium",
+                icu_available=True,
+                wait_time_days=3
+            ),
+            Hospital(
+                id="h-ruby-pune",
+                name="Ruby Hall Clinic",
+                location="Sassoon Road, Pune, Maharashtra 411001",
+                city="Pune",
+                distance_km=4.5,
+                rating=4.5,
+                review_count=267,
+                tier="premium",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Oncology", "Transplant"],
+                strengths=["Heritage hospital", "Advanced cardiac care", "Trusted name"],
+                risk_flags=["Premium pricing"],
+                cost_range={"min": 220000, "max": 400000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-rh-001",
+                        name="Dr. Meera Joshi",
+                        specialization="Cardiac Surgery",
+                        experience_years=18,
+                        rating=4.7,
+                        fee_min=2800,
+                        fee_max=5000
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-rh-001",
+                        sentiment="positive",
+                        excerpt="Historic hospital with excellent cardiac facilities."
+                    )
+                ],
+                coordinates={"lat": 18.5265, "lng": 73.8758},
+                rank_score=89,
+                rank_signals=RankSignals(
+                    clinical_capability=90,
+                    reputation=91,
+                    accessibility=85,
+                    affordability=72
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=85,
+                    themes=[
+                        {"theme": "Cardiac care", "mentions": 98, "positive_pct": 88},
+                        {"theme": "Heritage", "mentions": 76, "positive_pct": 90}
+                    ],
+                    sample_quotes=[
+                        {"text": "Trusted name in Pune healthcare for decades.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=4
+            ),
+            # Ahmedabad Hospitals
+            Hospital(
+                id="h-sal-ahmedabad",
+                name="SAL Hospital",
+                location="Drive-In Road, Ahmedabad, Gujarat 380052",
+                city="Ahmedabad",
+                distance_km=5.2,
+                rating=4.2,
+                review_count=187,
+                tier="mid",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Orthopedics", "Nephrology"],
+                strengths=["Affordable care", "Good facilities", "Patient-friendly"],
+                risk_flags=["Limited super-specialties"],
+                cost_range={"min": 120000, "max": 220000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-sal-001",
+                        name="Dr. Amit Shah",
+                        specialization="Cardiology",
+                        experience_years=14,
+                        rating=4.3,
+                        fee_min=1400,
+                        fee_max=2600
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-sal-001",
+                        sentiment="positive",
+                        excerpt="Good cardiac department with reasonable pricing."
+                    )
+                ],
+                coordinates={"lat": 23.0339, "lng": 72.5286},
+                rank_score=82,
+                rank_signals=RankSignals(
+                    clinical_capability=82,
+                    reputation=80,
+                    accessibility=87,
+                    affordability=88
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=78,
+                    themes=[
+                        {"theme": "Affordability", "mentions": 67, "positive_pct": 82},
+                        {"theme": "Care quality", "mentions": 54, "positive_pct": 78}
+                    ],
+                    sample_quotes=[
+                        {"text": "Value-for-money healthcare in Ahmedabad.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="medium",
+                icu_available=True,
+                wait_time_days=3
+            ),
+            Hospital(
+                id="h-zydus-ahmedabad",
+                name="Zydus Hospital",
+                location="Thaltej, Ahmedabad, Gujarat 380054",
+                city="Ahmedabad",
+                distance_km=8.9,
+                rating=4.4,
+                review_count=223,
+                tier="premium",
+                nabh_accredited=True,
+                specializations=["Cardiology", "Neurology", "Oncology"],
+                strengths=["Modern facilities", "Advanced technology", "Expert doctors"],
+                risk_flags=["Higher costs", "Distance from city center"],
+                cost_range={"min": 200000, "max": 380000},
+                doctors=[
+                    HospitalDoctor(
+                        id="d-zy-001",
+                        name="Dr. Neha Patel",
+                        specialization="Interventional Cardiology",
+                        experience_years=16,
+                        rating=4.6,
+                        fee_min=2500,
+                        fee_max=4200
+                    )
+                ],
+                reviews=[
+                    HospitalReview(
+                        id="r-zy-001",
+                        sentiment="positive",
+                        excerpt="Excellent facilities and caring doctors."
+                    )
+                ],
+                coordinates={"lat": 23.0439, "lng": 72.5076},
+                rank_score=87,
+                rank_signals=RankSignals(
+                    clinical_capability=88,
+                    reputation=85,
+                    accessibility=78,
+                    affordability=75
+                ),
+                sentiment_data=SentimentData(
+                    positive_pct=83,
+                    themes=[
+                        {"theme": "Facilities", "mentions": 87, "positive_pct": 86},
+                        {"theme": "Doctor care", "mentions": 67, "positive_pct": 84}
+                    ],
+                    sample_quotes=[
+                        {"text": "Modern hospital with good cardiac care.", "sentiment": "positive"}
+                    ]
+                ),
+                procedure_volume="high",
+                icu_available=True,
+                wait_time_days=4
             )
         ]
 

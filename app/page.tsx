@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useAppDispatch, useAppState, useCompare } from '@/lib/context';
-import { buildCostEstimate, buildLenderRiskProfile, generateMockSearchData } from '@/lib/mockData';
+import { buildCostEstimate, buildLenderRiskProfile } from '@/lib/mockData';
 import {
   callTriageAPI,
   callChatAPI,
@@ -46,6 +46,8 @@ export default function HomePage() {
   const [showEmergency, setShowEmergency] = useState(false);
   const [resultsExpanded, setResultsExpanded] = useState(false);
   const [sessionId] = useState(() => `session_${crypto.randomUUID()}`);
+  const [lastChatResponse, setLastChatResponse] = useState<Awaited<ReturnType<typeof callChatAPI>> | null>(null);
+  const [lastQuery, setLastQuery] = useState<string>('');
 
   const selectedHospitals = useMemo(
     () => state.searchResults.filter((h: { id: string }) => selectedIds.includes(h.id)),
@@ -76,6 +78,9 @@ export default function HomePage() {
     async (content: string) => {
       const query = content.trim();
       if (!query) return;
+
+      // Track this query for potential re-search after profile updates
+      setLastQuery(query);
 
       const isEmergency = EMERGENCY_TERMS.some((word) => query.toLowerCase().includes(word));
       setShowEmergency(isEmergency);
@@ -118,62 +123,117 @@ export default function HomePage() {
         }
 
         // Transform hospitals from MasterResponse to frontend format
-        const hospitals = chatResponse.hospitals || [];
+        // Access nested results_panel.hospitals.hospitals structure from backend
+        const rawHospitals = chatResponse.results_panel?.hospitals?.hospitals || chatResponse.hospitals || [];
+        const hospitals: Hospital[] = rawHospitals.map((h: any) => ({
+          ...h,
+          coordinates: {
+            lat: h.lat || h.coordinates?.lat || 0,
+            lng: h.lng || h.coordinates?.lng || 0,
+          },
+          // Ensure other required fields have defaults
+          location: h.location || h.address || location,
+          city: h.city || location,
+          distance_km: h.distance_km || h.distanceKm || 0,
+          rating: h.rating || 4.0,
+          tier: h.tier || 'mid',
+          nabh_accredited: h.nabh_accredited || h.nabh || false,
+          specializations: h.specializations || h.specialties || [],
+          strengths: h.strengths || [],
+          doctors: h.doctors || [],
+          reviews: h.reviews || [],
+        }));
         const hospitalCount = hospitals.length;
 
         // Build search data from response
         const searchData: import('@/types').SearchData = {
-          procedure: chatResponse.clinical_interpretation?.canonical_procedure || query,
-          icd10_code: chatResponse.clinical_interpretation?.icd10 || '',
-          icd10_label: chatResponse.clinical_interpretation?.category || '',
-          snomed_code: chatResponse.clinical_interpretation?.snomed_ct || '',
-          category: chatResponse.clinical_interpretation?.category || 'General Medicine',
+          procedure: chatResponse.results_panel?.clinical_interpretation?.canonical_procedure || chatResponse.clinical_interpretation?.canonical_procedure || query,
+          icd10_code: chatResponse.results_panel?.clinical_interpretation?.icd10 || chatResponse.clinical_interpretation?.icd10 || '',
+          icd10_label: chatResponse.results_panel?.clinical_interpretation?.category || chatResponse.clinical_interpretation?.category || '',
+          snomed_code: chatResponse.results_panel?.clinical_interpretation?.snomed_ct || chatResponse.clinical_interpretation?.snomed_ct || '',
+          category: chatResponse.results_panel?.clinical_interpretation?.category || chatResponse.clinical_interpretation?.category || 'General Medicine',
           query_location: location,
-          cost_range: chatResponse.cost_estimate?.total || { min: 50000, max: 200000 },
+          cost_range: chatResponse.results_panel?.cost_estimate?.total_cost_range || chatResponse.cost_estimate?.total || { min: 50000, max: 200000 },
           confidence: (chatResponse.chat_response.confidence_score || 75) / 100,
-          cost_breakdown: chatResponse.cost_estimate?.components 
-            ? {
-                procedure: chatResponse.cost_estimate.components['procedure'] || { min: 0, max: 0 },
-                doctor_fees: chatResponse.cost_estimate.components['doctor_fees'] || { min: 0, max: 0 },
-                hospital_stay: chatResponse.cost_estimate.components['hospital_stay'] || { min: 0, max: 0, nights: '1-2' },
-                diagnostics: chatResponse.cost_estimate.components['diagnostics'] || { min: 0, max: 0 },
-                medicines: chatResponse.cost_estimate.components['medicines'] || { min: 0, max: 0 },
-                contingency: chatResponse.cost_estimate.components['contingency'] || { min: 0, max: 0 },
-              }
-            : {
+          cost_breakdown: (() => {
+            const components = chatResponse.results_panel?.cost_estimate?.components || chatResponse.cost_estimate?.components;
+            if (!components) {
+              return {
                 procedure: { min: 0, max: 0 },
                 doctor_fees: { min: 0, max: 0 },
                 hospital_stay: { min: 0, max: 0, nights: '1-2' },
                 diagnostics: { min: 0, max: 0 },
                 medicines: { min: 0, max: 0 },
                 contingency: { min: 0, max: 0 },
-              },
-          comorbidity_warnings: chatResponse.treatment_pathway?.comorbidity_note 
-            ? [chatResponse.treatment_pathway.comorbidity_note] 
-            : [],
+              };
+            }
+            return {
+              procedure: components['procedure'] || { min: 0, max: 0 },
+              doctor_fees: components['doctor_fees'] || { min: 0, max: 0 },
+              hospital_stay: components['hospital_stay'] || { min: 0, max: 0, nights: '1-2' },
+              diagnostics: components['diagnostics'] || { min: 0, max: 0 },
+              medicines: components['medicines'] || { min: 0, max: 0 },
+              contingency: components['contingency'] || { min: 0, max: 0 },
+            };
+          })(),
+          comorbidity_warnings: (() => {
+            const impacts = chatResponse.results_panel?.pathway?.comorbidity_impacts;
+            if (impacts && impacts.length > 0) {
+              return impacts.map((c) => `${c.condition}: may increase costs`);
+            }
+            const note = chatResponse.treatment_pathway?.comorbidity_note;
+            return note ? [note] : [];
+          })(),
           hospitals: hospitals.slice(0, 3),
           clinical_mapping: {
             user_query: query,
-            procedure: chatResponse.clinical_interpretation?.canonical_procedure || query,
-            icd10_code: chatResponse.clinical_interpretation?.icd10 || '',
-            icd10_label: chatResponse.clinical_interpretation?.category || '',
-            snomed_code: chatResponse.clinical_interpretation?.snomed_ct || '',
-            category: chatResponse.clinical_interpretation?.category || 'General Medicine',
-            pathway: (chatResponse.treatment_pathway?.phases || []).map((p, i) => ({
-              step: i + 1,
-              name: p.phase,
-              duration: '1-3 days',
-              cost_range: p.cost_range,
-              description: p.description,
-            })),
+            procedure: chatResponse.results_panel?.clinical_interpretation?.canonical_procedure || chatResponse.clinical_interpretation?.canonical_procedure || query,
+            icd10_code: chatResponse.results_panel?.clinical_interpretation?.icd10 || chatResponse.clinical_interpretation?.icd10 || '',
+            icd10_label: chatResponse.results_panel?.clinical_interpretation?.icd10_label || chatResponse.results_panel?.clinical_interpretation?.category || chatResponse.clinical_interpretation?.icd10_label || chatResponse.clinical_interpretation?.category || '',
+            snomed_code: chatResponse.results_panel?.clinical_interpretation?.snomed_ct || chatResponse.clinical_interpretation?.snomed_ct || '',
+            category: chatResponse.results_panel?.clinical_interpretation?.category || chatResponse.clinical_interpretation?.category || 'General Medicine',
+            pathway: (() => {
+              const steps = chatResponse.results_panel?.pathway?.pathway_steps;
+              if (steps && steps.length > 0) {
+                return steps.map((p) => ({
+                  step: p.step,
+                  name: p.name,
+                  duration: p.duration || '1-3 days',
+                  cost_range: { min: p.cost_min || 0, max: p.cost_max || 0 },
+                  description: '',
+                }));
+              }
+              const phases = chatResponse.treatment_pathway?.phases || [];
+              return phases.map((p, i) => ({
+                step: i + 1,
+                name: p.phase,
+                duration: '1-3 days',
+                cost_range: p.cost_range,
+                description: p.description,
+              }));
+            })(),
+            clinical_phases: chatResponse.results_panel?.pathway?.clinical_phases || chatResponse.treatment_pathway?.clinical_phases,
             confidence: (chatResponse.chat_response.confidence_score || 75) / 100,
-            confidence_factors: (chatResponse.xai_explanation?.shap_waterfall.features || []).map(f => ({
-              key: 'data_availability' as const,
-              label: f.name,
-              score: Math.round(f.contribution * 100),
-              weight: f.value,
-              note: `Contribution: ${f.contribution.toFixed(2)}`,
-            })),
+            confidence_factors: (() => {
+              const highlights = chatResponse.results_panel?.xai?.shap_highlights;
+              if (highlights && highlights.length > 0) {
+                return highlights.map((f) => ({
+                  key: 'data_availability' as const,
+                  label: f.feature || 'Unknown',
+                  score: Math.round((f.contribution || 0) * 100),
+                  weight: f.contribution || 0,
+                  note: `Contribution: ${(f.contribution || 0).toFixed(2)}`,
+                }));
+              }
+              const features = chatResponse.xai_explanation?.shap_waterfall?.features || [];
+              return features.map((f) => ({
+                key: 'data_availability' as const,
+                label: f.name || 'Unknown',
+                score: Math.round((f.contribution || 0) * 100),
+                weight: f.value || 0,
+                note: `Contribution: ${(f.contribution || 0).toFixed(2)}`,
+              }));
+            })(),
           },
           pathway: (chatResponse.treatment_pathway?.phases || []).map((p, i) => ({
             step: i + 1,
@@ -219,6 +279,7 @@ export default function HomePage() {
         dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
         dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
         dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
+        setLastChatResponse(chatResponse);
       } catch (error) {
         console.warn('Master Orchestrator API failed, falling back to legacy API:', error);
         
@@ -288,49 +349,24 @@ export default function HomePage() {
           dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
           dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
         } catch (fallbackError) {
-          // Both APIs failed - use mock data
-          console.warn('Both APIs failed, using mock data:', fallbackError);
-          await new Promise((resolve) => setTimeout(resolve, 900));
-
-          const searchData = generateMockSearchData(query, location);
-
-          if (state.patientProfile?.comorbidities.length) {
-            searchData.comorbidity_warnings = state.patientProfile.comorbidities.map(
-              (condition: string) =>
-                `${condition}: may increase complication risk and total estimate spread by Rs 10K to Rs 60K depending on provider.`
-            );
-          }
-
-          const estimate = buildCostEstimate(searchData);
-          const lenderRisk = buildLenderRiskProfile(estimate);
-          const hospitalCount = searchData.hospitals.length;
-          const hospitalLabel = hospitalCount === 1 ? 'hospital' : 'hospitals';
-
-          let response = `I interpreted your query as **${searchData.procedure}** and found **${hospitalCount} ${hospitalLabel}** in **${searchData.query_location}**.`;
-          response += `\n\nEstimated range: **Rs ${searchData.cost_range.min.toLocaleString('en-IN')} - Rs ${searchData.cost_range.max.toLocaleString('en-IN')}** with confidence **${Math.round(searchData.confidence * 100)}%**.`;
-
-          if (isEmergency) {
-            response = '**Possible emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\n' + response;
-          }
-
-          response += '\n\n*(Using offline data - backend LLM service unavailable)*';
-          response += '\n\nDecision support only. Please consult a qualified doctor before making medical decisions.';
+          // Both APIs failed - show error state instead of mock data
+          console.error('Both APIs failed:', fallbackError);
+          
+          const errorMessage = isEmergency
+            ? '**🚨 Emergency indicators detected. If urgent symptoms are active, call 112 immediately.**\n\nI apologize, but I\'m unable to process your request at the moment. The healthcare search service is temporarily unavailable. Please try again in a few minutes or contact your nearest hospital directly for urgent care.'
+            : 'I apologize, but I\'m unable to process your healthcare query at the moment. The hospital search service is temporarily unavailable. Please try again in a few minutes.';
 
           const aiMessage: Message = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: response,
+            content: errorMessage,
             timestamp: new Date(),
-            searchData,
           };
 
           dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
-          dispatch({ type: 'SET_SEARCH_RESULTS', payload: searchData.hospitals });
-          dispatch({ type: 'SET_SORT_MODE', payload: 'best-match' });
-          dispatch({ type: 'SET_FILTERS', payload: { tier: 'all', nabhOnly: false, distanceKm: null, rating: null } });
-          dispatch({ type: 'SET_COST_ESTIMATE', payload: estimate });
-          dispatch({ type: 'SET_CLINICAL_MAPPING', payload: searchData.clinical_mapping || null });
-          dispatch({ type: 'SET_LENDER_RISK_PROFILE', payload: lenderRisk });
+          dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
+          dispatch({ type: 'SET_COST_ESTIMATE', payload: null });
+          dispatch({ type: 'SET_CLINICAL_MAPPING', payload: null });
         }
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -366,6 +402,7 @@ export default function HomePage() {
             onOpenProfile={() => setProfileModalOpen(true)}
             showEmergency={showEmergency}
             onDismissEmergency={() => setShowEmergency(false)}
+            patientProfile={state.patientProfile}
           />
         </main>
 
@@ -389,6 +426,20 @@ export default function HomePage() {
             riskAdjustments={state.costEstimate?.risk_adjustments || []}
             dataSources={state.costEstimate?.data_sources || []}
             onCorrectMapping={() => handleSendMessage('Actually, I meant...')}
+            personalizedFinancialAdvice={lastChatResponse?.results_panel?.financial_assistance?.personalized_advice || lastChatResponse?.financial_assistance?.personalized_advice}
+            recommendedGovernmentScheme={lastChatResponse?.results_panel?.financial_assistance?.recommended_scheme || lastChatResponse?.financial_assistance?.recommended_scheme}
+            dtiAssessment={lastChatResponse?.results_panel?.financial_assistance?.dti_assessment || lastChatResponse?.financial_assistance?.dti_assessment}
+            appointmentPreparationTips={lastChatResponse?.results_panel?.checklist?.preparation_tips || lastChatResponse?.appointment_checklist?.preparation_tips}
+            appointmentWhatToExpect={lastChatResponse?.results_panel?.checklist?.what_to_expect || lastChatResponse?.appointment_checklist?.what_to_expect}
+            backendAppointmentChecklist={(() => {
+              const checklist = lastChatResponse?.results_panel?.checklist || lastChatResponse?.appointment_checklist;
+              if (!checklist) return undefined;
+              return {
+                documents: checklist.documents.map((d: { name: string }) => d.name),
+                questions: checklist.questions,
+                forms: checklist.forms.map((f: { name: string; download_url: string }) => ({ name: f.name, generate_url: f.download_url })),
+              };
+            })()}
             className={cn(
               'hidden lg:flex',
               resultsExpanded
@@ -417,6 +468,20 @@ export default function HomePage() {
         onToggleCompare={toggleCompare}
         isOpen={mobileResultsOpen}
         onClose={() => setMobileResultsOpen(false)}
+        personalizedFinancialAdvice={lastChatResponse?.results_panel?.financial_assistance?.personalized_advice || lastChatResponse?.financial_assistance?.personalized_advice}
+        recommendedGovernmentScheme={lastChatResponse?.results_panel?.financial_assistance?.recommended_scheme || lastChatResponse?.financial_assistance?.recommended_scheme}
+        dtiAssessment={lastChatResponse?.results_panel?.financial_assistance?.dti_assessment || lastChatResponse?.financial_assistance?.dti_assessment}
+        appointmentPreparationTips={lastChatResponse?.results_panel?.checklist?.preparation_tips || lastChatResponse?.appointment_checklist?.preparation_tips}
+        appointmentWhatToExpect={lastChatResponse?.results_panel?.checklist?.what_to_expect || lastChatResponse?.appointment_checklist?.what_to_expect}
+        backendAppointmentChecklist={(() => {
+          const checklist = lastChatResponse?.results_panel?.checklist || lastChatResponse?.appointment_checklist;
+          if (!checklist) return undefined;
+          return {
+            documents: checklist.documents.map((d: { name: string }) => d.name),
+            questions: checklist.questions,
+            forms: checklist.forms.map((f: { name: string; download_url: string }) => ({ name: f.name, generate_url: f.download_url })),
+          };
+        })()}
       />
 
       <CompareDrawer
@@ -439,6 +504,8 @@ export default function HomePage() {
         profile={state.patientProfile}
         onSave={(profile) => dispatch({ type: 'SET_PATIENT_PROFILE', payload: profile })}
         onClear={() => dispatch({ type: 'SET_PATIENT_PROFILE', payload: null })}
+        onSearch={handleSendMessage}
+        lastQuery={lastQuery}
       />
     </div>
   );

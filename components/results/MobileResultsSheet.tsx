@@ -9,6 +9,8 @@ import { ResultsControls } from './ResultsControls';
 import { CostEstimateCard } from '@/components/cost/CostEstimateCard';
 import { Button } from '@/components/ui/button';
 import { ClinicalMappingCard } from './ClinicalMappingCard';
+import { AppointmentGuide } from '@/components/assist/AppointmentGuide';
+import { FinancialGuide } from '@/components/assist/FinancialGuide';
 import { useAppState } from '@/lib/context';
 
 interface MobileResultsSheetProps {
@@ -20,6 +22,21 @@ interface MobileResultsSheetProps {
   onToggleCompare: (id: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  // New props for enhanced components
+  personalizedFinancialAdvice?: string;
+  recommendedGovernmentScheme?: string;
+  dtiAssessment?: {
+    risk_level: string;
+    rate_range: string;
+    cta: string;
+  };
+  appointmentPreparationTips?: string[];
+  appointmentWhatToExpect?: string;
+  backendAppointmentChecklist?: {
+    documents: string[];
+    questions: string[];
+    forms: Array<{ name: string; generate_url: string }>;
+  };
 }
 
 export function MobileResultsSheet({
@@ -31,6 +48,12 @@ export function MobileResultsSheet({
   onToggleCompare,
   isOpen,
   onClose,
+  personalizedFinancialAdvice,
+  recommendedGovernmentScheme,
+  dtiAssessment,
+  appointmentPreparationTips,
+  appointmentWhatToExpect,
+  backendAppointmentChecklist,
 }: MobileResultsSheetProps) {
   const appState = useAppState();
 
@@ -72,7 +95,7 @@ export function MobileResultsSheet({
             <ResultsControls totalCount={appState.searchResults.length} visibleCount={hospitals.length} />
 
             {/* Content */}
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-4 space-y-6 custom-scrollbar">
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-4 space-y-6 custom-scrollbar bg-background">
               {clinicalMapping && (
                 <ClinicalMappingCard
                   mapping={clinicalMapping}
@@ -97,6 +120,20 @@ export function MobileResultsSheet({
                   onToggleCompare={onToggleCompare}
                 />
               )}
+              {costEstimate && (
+                <AppointmentGuide
+                  procedure={costEstimate.procedure}
+                  backendChecklist={backendAppointmentChecklist}
+                  preparationTips={appointmentPreparationTips}
+                  whatToExpect={appointmentWhatToExpect}
+                />
+              )}
+              <FinancialGuide
+                personalizedAdvice={personalizedFinancialAdvice}
+                recommendedScheme={recommendedGovernmentScheme}
+                dtiAssessment={dtiAssessment}
+                costEstimate={costEstimate ? { min: costEstimate.cost_range.min, max: costEstimate.cost_range.max } : undefined}
+              />
             </div>
           </motion.div>
         </>

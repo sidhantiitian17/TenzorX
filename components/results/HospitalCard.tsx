@@ -106,25 +106,25 @@ export function HospitalCard({
     >
       <Card
         className={cn(
-          'overflow-hidden transition-shadow',
-          isSelected && 'ring-2 ring-primary'
+          'overflow-hidden transition-shadow border-slate-700 bg-slate-800/30',
+          isSelected && 'ring-2 ring-teal-500'
         )}
       >
         <CardContent className="p-5">
           {/* Header */}
           <div className="flex items-start gap-4">
             {/* Hospital logo placeholder */}
-            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <Building2 className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-lg bg-teal-500/10 flex items-center justify-center shrink-0">
+              <Building2 className="h-6 w-6 text-teal-400" />
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-semibold text-foreground truncate">
+                  <h3 className="font-semibold text-slate-100 truncate">
                     {hospital.name}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-400">
                     {hospital.location}
                   </p>
                 </div>
@@ -133,10 +133,10 @@ export function HospitalCard({
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="flex items-center gap-1 text-sm">
                     <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    <span className="font-medium">{hospital.rating}</span>
+                    <span className="font-medium text-slate-100">{hospital.rating}</span>
                   </div>
                   {hospital.nabh_accredited && (
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 gap-1">
+                    <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-400 gap-1 border-emerald-500/30">
                       <ShieldCheck className="h-3 w-3" />
                       NABH
                     </Badge>
@@ -147,20 +147,20 @@ export function HospitalCard({
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-border my-4" />
+          <div className="h-px bg-slate-700 my-4" />
 
           {/* Procedure and cost */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Procedure: <span className="text-foreground">{procedure}</span>
+              <p className="text-sm text-slate-400">
+                Procedure: <span className="text-slate-200 font-medium">{procedure}</span>
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Estimated Cost</p>
-                <p className="text-xl font-semibold font-mono">
+                <p className="text-sm text-slate-400 mb-1">Estimated Cost</p>
+                <p className="text-xl font-semibold font-mono text-slate-100">
                   {formatCostRange(hospital.cost_range)}
                 </p>
               </div>
@@ -171,15 +171,15 @@ export function HospitalCard({
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-border my-4" />
+          <div className="h-px bg-slate-700 my-4" />
 
           {/* Quick info */}
-          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
             <div className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               {formatDistance(hospital.distance_km)}
             </div>
-            <Badge variant="secondary" className={getTierColor(hospital.tier)}>
+            <Badge variant="secondary" className="bg-slate-700 text-slate-300 border-slate-600">
               {getTierLabel(hospital.tier)}
             </Badge>
             {hospital.specializations.length > 0 && (
@@ -193,7 +193,7 @@ export function HospitalCard({
           {hospital.strengths.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {hospital.strengths.slice(0, 3).map((strength) => (
-                <Badge key={strength} variant="secondary" className="text-xs">
+                <Badge key={strength} variant="secondary" className="text-xs bg-slate-700 text-slate-300 border-slate-600">
                   {strength}
                 </Badge>
               ))}
@@ -205,7 +205,7 @@ export function HospitalCard({
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
               onClick={() => setIsExpanded(!isExpanded)}
             >
               View Details
@@ -219,7 +219,12 @@ export function HospitalCard({
             <Button
               variant={isSelected ? 'default' : 'outline'}
               size="sm"
-              className="flex-1"
+              className={cn(
+                'flex-1',
+                isSelected
+                  ? 'bg-teal-500 hover:bg-teal-600 text-white'
+                  : 'border-slate-600 text-slate-300 hover:bg-slate-700'
+              )}
               onClick={() => onToggleCompare?.(hospital.id)}
             >
               {isSelected ? (

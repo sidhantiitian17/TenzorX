@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import type { Message } from '@/types';
+import type { Message, PatientProfile } from '@/types';
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 import { InputBar } from './InputBar';
@@ -16,6 +16,7 @@ interface ChatWindowProps {
   onOpenProfile?: () => void;
   showEmergency: boolean;
   onDismissEmergency: () => void;
+  patientProfile?: PatientProfile | null;
 }
 
 export function ChatWindow({
@@ -25,6 +26,7 @@ export function ChatWindow({
   onOpenProfile,
   showEmergency,
   onDismissEmergency,
+  patientProfile,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasMessages = messages.length > 0;
@@ -82,6 +84,7 @@ export function ChatWindow({
         onSend={onSendMessage}
         isLoading={isLoading}
         onOpenProfile={onOpenProfile}
+        patientProfile={patientProfile}
       />
     </div>
   );

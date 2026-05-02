@@ -24,6 +24,18 @@ export interface PathwayStep {
   description?: string;
 }
 
+export interface ClinicalPhaseDetail {
+  phase: 'consultation' | 'diagnostics' | 'procedure' | 'observation_stay' | 'follow_up_medication';
+  name: string;
+  description: string;
+  activities: string[];
+  cost_min: number;
+  cost_max: number;
+  duration: string;
+  responsible_party: string;
+  llm_explanation: string;
+}
+
 export interface ClinicalMapping {
   user_query: string;
   procedure: string;
@@ -32,12 +44,13 @@ export interface ClinicalMapping {
   snomed_code: string;
   category: string;
   pathway: PathwayStep[];
+  clinical_phases?: ClinicalPhaseDetail[];
   confidence: number;
   confidence_factors?: ConfidenceFactor[];
 }
 
 export interface ConfidenceFactor {
-  key: 'data_availability' | 'pricing_consistency' | 'recency' | 'patient_complexity';
+  key: 'data_availability' | 'pricing_consistency' | 'recency' | 'patient_complexity' | 'severity_assessment' | 'icd10_mapping' | 'snomed_mapping' | 'llm_confidence';
   label: string;
   score: number;
   weight: number;

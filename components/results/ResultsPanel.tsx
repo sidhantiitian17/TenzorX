@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Info, Map, List, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import type { ClinicalMapping, CostEstimate, Hospital, RiskAdjustment } from '@/types';
@@ -34,6 +34,21 @@ interface ResultsPanelProps {
   riskAdjustments?: RiskAdjustment[];
   dataSources?: string[];
   onCorrectMapping?: () => void;
+  // New props for enhanced components
+  personalizedFinancialAdvice?: string;
+  recommendedGovernmentScheme?: string;
+  dtiAssessment?: {
+    risk_level: string;
+    rate_range: string;
+    cta: string;
+  };
+  appointmentPreparationTips?: string[];
+  appointmentWhatToExpect?: string;
+  backendAppointmentChecklist?: {
+    documents: string[];
+    questions: string[];
+    forms: Array<{ name: string; generate_url: string }>;
+  };
 }
 
 export function ResultsPanel({
@@ -50,12 +65,30 @@ export function ResultsPanel({
   riskAdjustments = [],
   dataSources = [],
   onCorrectMapping,
+  personalizedFinancialAdvice,
+  recommendedGovernmentScheme,
+  dtiAssessment,
+  appointmentPreparationTips,
+  appointmentWhatToExpect,
+  backendAppointmentChecklist,
 }: ResultsPanelProps) {
   const appState = useAppState();
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | undefined>();
   const [rankingOpen, setRankingOpen] = useState(false);
+  // Store hospitals with real-time calculated distances from user's GPS
+  const [hospitalsWithRealtimeDistances, setHospitalsWithRealtimeDistances] = useState<Hospital[]>(hospitals);
   const hasResults = hospitals.length > 0 || costEstimate;
+  
+  // Handle distance updates from HospitalMap (calculated from user's GPS location)
+  const handleDistanceUpdate = useCallback((updatedHospitals: Hospital[]) => {
+    setHospitalsWithRealtimeDistances(updatedHospitals);
+  }, []);
+  
+  // Sync with parent hospitals when they change (e.g., new search)
+  useEffect(() => {
+    setHospitalsWithRealtimeDistances(hospitals);
+  }, [hospitals]);
 
   return (
     <AnimatePresence>
@@ -104,29 +137,27 @@ export function ResultsPanel({
                   )}
                 </Button>
               )}
-              {/* View Toggle */}
-              {hospitals.length > 0 && (
-                <div className="flex items-center bg-muted rounded-md p-0.5">
-                  <Button
-                    variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7 px-2"
-                    onClick={() => setViewMode('list')}
-                  >
-                    <List className="h-4 w-4 mr-1" />
-                    List
-                  </Button>
-                  <Button
-                    variant={viewMode === 'map' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7 px-2"
-                    onClick={() => setViewMode('map')}
-                  >
-                    <Map className="h-4 w-4 mr-1" />
-                    Map
-                  </Button>
-                </div>
-              )}
+              {/* View Toggle - Always show */}
+              <div className="flex items-center bg-muted rounded-md p-0.5">
+                <Button
+                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4 mr-1" />
+                  List
+                </Button>
+                <Button
+                  variant={viewMode === 'map' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => setViewMode('map')}
+                >
+                  <Map className="h-4 w-4 mr-1" />
+                  Map
+                </Button>
+              </div>
               {onClose && (
                 <Button
                   variant="ghost"
@@ -143,20 +174,21 @@ export function ResultsPanel({
           <ResultsControls totalCount={appState.searchResults.length} visibleCount={hospitals.length} />
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            {viewMode === 'map' && hospitals.length > 0 ? (
-              /* Map View */
-              <div className="flex-1 relative">
+          <div className="flex-1 overflow-hidden flex flex-col bg-background">
+            {viewMode === 'map' ? (
+              /* Map View - Always show, even with 0 hospitals */
+              <div className="flex-1 relative bg-background">
                 <HospitalMap
                   hospitals={hospitals}
                   selectedHospitalId={selectedHospitalId}
                   onHospitalSelect={setSelectedHospitalId}
+                  onDistanceUpdate={handleDistanceUpdate}
                   className="h-full"
                 />
               </div>
             ) : (
               /* List View */
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6 bg-background">
                 {clinicalMapping && (
                   <ClinicalMappingCard
                     mapping={clinicalMapping}
@@ -185,10 +217,10 @@ export function ResultsPanel({
                   />
                 )}
 
-                {/* Hospital list */}
+                {/* Hospital list - uses real-time GPS distances when available */}
                 {hospitals.length > 0 && (
                   <HospitalList
-                    hospitals={hospitals}
+                    hospitals={hospitalsWithRealtimeDistances.length > 0 ? hospitalsWithRealtimeDistances : hospitals}
                     procedure={costEstimate?.procedure}
                     confidence={costEstimate?.confidence}
                     selectedIds={selectedIds}
@@ -196,8 +228,20 @@ export function ResultsPanel({
                   />
                 )}
 
-                {costEstimate && <AppointmentGuide procedure={costEstimate.procedure} />}
-                <FinancialGuide />
+                {costEstimate && (
+                  <AppointmentGuide
+                    procedure={costEstimate.procedure}
+                    backendChecklist={backendAppointmentChecklist}
+                    preparationTips={appointmentPreparationTips}
+                    whatToExpect={appointmentWhatToExpect}
+                  />
+                )}
+                <FinancialGuide
+                  personalizedAdvice={personalizedFinancialAdvice}
+                  recommendedScheme={recommendedGovernmentScheme}
+                  dtiAssessment={dtiAssessment}
+                  costEstimate={costEstimate ? { min: costEstimate.cost_range.min, max: costEstimate.cost_range.max } : undefined}
+                />
                 <DataSourcePanel sources={dataSources} />
               </div>
             )}

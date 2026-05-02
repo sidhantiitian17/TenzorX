@@ -56,12 +56,12 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-slate-700 bg-slate-800/30">
       {/* Low confidence warning */}
       {isLowConfidence && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-sm text-amber-800">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+          <p className="text-sm text-amber-300">
             Cost estimates for this procedure have high variability. The ranges shown are broad benchmarks only.
           </p>
         </div>
@@ -70,8 +70,8 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-lg">Estimated Cost for {estimate.procedure}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CardTitle className="text-lg text-slate-100">Estimated Cost for {estimate.procedure}</CardTitle>
+            <p className="text-sm text-slate-400 mt-0.5">
               {estimate.location || 'India'} · {estimate.tier || 'mid'} tier hospitals
             </p>
           </div>
@@ -79,22 +79,22 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {/* Total cost range */}
-        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total range</p>
-          <p className="text-xl font-semibold font-mono text-foreground">{formatCostRangeFull(estimate.cost_range)}</p>
+        <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Total Range</p>
+          <p className="text-2xl font-semibold font-mono text-slate-100">{formatCostRangeFull(estimate.cost_range)}</p>
           {estimate.typical_range && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-400">
               Typical: {formatCostRangeFull(estimate.typical_range)}
             </p>
           )}
         </div>
 
         {estimate.tier_comparison && (
-          <div className="rounded-lg border border-border p-3">
-            <p className="mb-2 text-sm font-medium">Compare cost by hospital tier</p>
-            <div className="grid gap-2 text-sm sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <p className="mb-3 text-sm font-medium text-slate-100">Compare cost by hospital tier</p>
+            <div className="grid gap-3 text-sm sm:grid-cols-3">
               <TierCell label="Budget" value={estimate.tier_comparison.budget} />
               <TierCell label="Mid-tier" value={estimate.tier_comparison.mid} featured />
               <TierCell label="Premium" value={estimate.tier_comparison.premium} />
@@ -103,17 +103,17 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
         )}
 
         {estimate.confidence_factors && estimate.confidence_factors.length > 0 && (
-          <div className="rounded-lg border border-border p-3">
-            <p className="mb-2 text-sm font-medium">Confidence drivers</p>
-            <div className="space-y-2">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <p className="mb-3 text-sm font-medium text-slate-100">Confidence drivers</p>
+            <div className="space-y-3">
               {estimate.confidence_factors.map((factor) => (
                 <div key={factor.key} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-foreground">{factor.label}</span>
-                    <span className="font-mono text-muted-foreground">{factor.score}%</span>
+                    <span className="font-medium text-slate-300">{factor.label}</span>
+                    <span className="font-mono text-slate-400">{factor.score}%</span>
                   </div>
-                  <div className="h-2 rounded-full bg-muted">
-                    <div className="h-2 rounded-full bg-primary" style={{ width: `${factor.score}%` }} />
+                  <div className="h-2 rounded-full bg-slate-700">
+                    <div className="h-2 rounded-full bg-teal-500" style={{ width: `${factor.score}%` }} />
                   </div>
                 </div>
               ))}
@@ -122,7 +122,7 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
         )}
 
         {estimate.geo_adjustment && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-400">
             Cost adjusted for {estimate.geo_adjustment.city_name} ({estimate.geo_adjustment.city_tier}).
             Approximately {Math.round(estimate.geo_adjustment.discount_vs_metro * 100)}% lower than metro benchmarks for similar care pathways.
           </p>
@@ -130,9 +130,9 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
 
         {/* Comorbidity warnings */}
         {comorbidityWarnings.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-            <div className="text-sm text-amber-800">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-sm text-amber-300">
               {comorbidityWarnings.map((warning, index) => (
                 <p key={index}>{warning}</p>
               ))}
@@ -142,7 +142,7 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
 
         {/* Cost breakdown collapsible */}
         <Collapsible open={showBreakdown} onOpenChange={setShowBreakdown}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-sm font-medium hover:text-primary transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-sm font-medium text-slate-300 hover:text-slate-100 transition-colors">
             <span>View Cost Breakdown</span>
             <ChevronDown
               className={cn(
@@ -168,9 +168,9 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
         </Collapsible>
 
         {estimate.risk_adjustments && estimate.risk_adjustments.length > 0 && (
-          <div className="rounded-lg border border-border p-3">
-            <p className="mb-2 text-sm font-medium">Comorbidity-adjusted impact</p>
-            <div className="space-y-1.5 text-sm text-muted-foreground">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <p className="mb-2 text-sm font-medium text-slate-100">Comorbidity-adjusted impact</p>
+            <div className="space-y-1.5 text-sm text-slate-400">
               {estimate.risk_adjustments.map((risk) => (
                 <p key={risk.factor}>
                   +{risk.factor}: {formatINRFull(risk.cost_delta_min)} to {formatINRFull(risk.cost_delta_max)}
@@ -182,7 +182,7 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
 
         {/* What affects this estimate? */}
         <Collapsible open={showFactors} onOpenChange={setShowFactors}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-sm font-medium hover:text-primary transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-sm font-medium text-slate-300 hover:text-slate-100 transition-colors">
             <span className="flex items-center gap-1.5">
               <Info className="h-4 w-4" />
               What may increase cost?
@@ -202,7 +202,7 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                 >
-                  <div className="space-y-2 pt-2 text-sm text-muted-foreground">
+                  <div className="space-y-2 pt-2 text-sm text-slate-400">
                     <p>Extended ICU or HDU stay</p>
                     <p>Complications requiring additional procedures</p>
                     <p>Premium room upgrades</p>
@@ -217,13 +217,13 @@ export function CostEstimateCard({ estimate, comorbidityWarnings = [] }: CostEst
         </Collapsible>
 
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" variant="outline" onClick={exportSummary}>
+          <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700" onClick={exportSummary}>
             Export Estimate (TXT)
           </Button>
-          <Button size="sm" variant="outline" onClick={shareSummary}>
+          <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700" onClick={shareSummary}>
             Share
           </Button>
-          <Button size="sm" onClick={() => setShowBreakdown(true)}>
+          <Button size="sm" className="bg-teal-500 hover:bg-teal-600 text-white" onClick={() => setShowBreakdown(true)}>
             View Breakdown
           </Button>
         </div>
@@ -244,12 +244,12 @@ function TierCell({
   return (
     <div
       className={cn(
-        'rounded-md border px-3 py-2',
-        featured ? 'border-primary bg-primary/5' : 'border-border bg-card'
+        'rounded-lg border px-3 py-3',
+        featured ? 'border-teal-500 bg-teal-500/10' : 'border-slate-700 bg-slate-900/50'
       )}
     >
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 font-mono text-sm font-medium">{formatCostRangeFull(value)}</p>
+      <p className={cn('text-xs uppercase tracking-wide', featured ? 'text-teal-400' : 'text-slate-400')}>{label}</p>
+      <p className={cn('mt-1 font-mono text-sm font-medium', featured ? 'text-teal-100' : 'text-slate-300')}>{formatCostRangeFull(value)}</p>
     </div>
   );
 }

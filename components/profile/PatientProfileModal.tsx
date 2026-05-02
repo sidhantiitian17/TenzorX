@@ -23,6 +23,8 @@ interface PatientProfileModalProps {
   profile: PatientProfile | null;
   onSave: (profile: PatientProfile) => void;
   onClear: () => void;
+  onSearch?: (query: string) => void;
+  lastQuery?: string;
 }
 
 const comorbidityOptions = [
@@ -61,6 +63,8 @@ export function PatientProfileModal({
   profile,
   onSave,
   onClear,
+  onSearch,
+  lastQuery,
 }: PatientProfileModalProps) {
   // Local state for form fields
   const [age, setAge] = useState<number | null>(null);
@@ -174,6 +178,14 @@ export function PatientProfileModal({
       location: location.trim(),
     });
     onOpenChange(false);
+
+    // Auto-trigger search if there's a previous query
+    if (onSearch && lastQuery && lastQuery.trim()) {
+      // Small delay to let modal close first
+      setTimeout(() => {
+        onSearch(lastQuery);
+      }, 300);
+    }
   };
 
   const handleClear = () => {
@@ -348,7 +360,7 @@ export function PatientProfileModal({
             Clear All
           </Button>
           <Button onClick={handleSave} className="flex-1">
-            Apply &amp; Search
+            {lastQuery ? 'Save & Update Results' : 'Apply & Search'}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">

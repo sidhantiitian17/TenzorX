@@ -1,12 +1,23 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, HelpCircle } from 'lucide-react';
+import { Download, HelpCircle, FileText, Clock } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { appointmentChecklists } from '@/lib/mockData';
 
-const documents = [
+interface AppointmentGuideProps {
+  procedure: string;
+  backendChecklist?: {
+    documents: string[];
+    questions: string[];
+    forms: Array<{ name: string; generate_url: string }>;
+  };
+  preparationTips?: string[];
+  whatToExpect?: string;
+}
+
+const defaultDocuments = [
   'Aadhar card / photo ID',
   'Previous reports (X-ray, MRI, blood tests)',
   'Current medication list',
@@ -14,30 +25,38 @@ const documents = [
   'Doctor referral letter (if available)',
 ];
 
-const forms = [
+const defaultForms = [
   'Patient Registration Form',
   'Medical History Declaration',
   'Consent for Surgery Form',
   'Insurance Pre-authorization Form',
 ];
 
-interface AppointmentGuideProps {
-  procedure: string;
-}
-
-export function AppointmentGuide({ procedure }: AppointmentGuideProps) {
+export function AppointmentGuide({ 
+  procedure, 
+  backendChecklist,
+  preparationTips,
+  whatToExpect 
+}: AppointmentGuideProps) {
   const sourceChecklist = useMemo(() => {
+    if (backendChecklist) {
+      return {
+        documents: backendChecklist.documents,
+        questions: backendChecklist.questions,
+        forms: backendChecklist.forms.map(f => f.name),
+      };
+    }
     return appointmentChecklists[procedure as keyof typeof appointmentChecklists] ?? {
-      documents,
+      documents: defaultDocuments,
       questions: [
         `What are my treatment options for ${procedure}?`,
         'What is included in the package estimate and what is not?',
         'How do my comorbidities affect risk and recovery?',
         'How many follow-ups and physiotherapy sessions are expected?',
       ],
-      forms,
+      forms: defaultForms,
     };
-  }, [procedure]);
+  }, [procedure, backendChecklist]);
 
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
@@ -96,37 +115,67 @@ export function AppointmentGuide({ procedure }: AppointmentGuideProps) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-sm font-semibold">Appointment &amp; Paperwork Assistant</p>
-      <p className="mt-1 text-xs text-muted-foreground">
+    <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-4">
+      <p className="text-sm font-semibold text-slate-100">Appointment &amp; Paperwork Assistant</p>
+      <p className="mt-1 text-xs text-slate-400">
         Procedure-specific checklist to reduce surprises on appointment day.
       </p>
+
+      {/* What to Expect Section */}
+      {whatToExpect && (
+        <div className="mt-3 rounded-lg border border-teal-500/30 bg-teal-500/10 p-3">
+          <div className="flex items-start gap-2">
+            <Clock className="h-4 w-4 text-teal-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-teal-300 mb-1">What to Expect</p>
+              <p className="text-xs text-teal-200">{whatToExpect}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preparation Tips */}
+      {preparationTips && preparationTips.length > 0 && (
+        <div className="mt-3 rounded-lg border border-slate-700 bg-slate-900/50 p-3">
+          <p className="text-xs font-medium text-slate-300 mb-2 flex items-center gap-1">
+            <FileText className="h-3.5 w-3.5" />
+            Preparation Tips
+          </p>
+          <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
+            {preparationTips.map((tip, i) => (
+              <li key={i}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-3 space-y-2">
         {sourceChecklist.documents.map((item: string) => (
-          <label key={item} className="flex items-center gap-2 text-sm">
+          <label key={item} className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
             <Checkbox
               checked={!!checked[item]}
               onCheckedChange={(next) =>
                 setChecked((prev) => ({ ...prev, [item]: Boolean(next) }))
               }
+              className="border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
             />
             <span>{item}</span>
           </label>
         ))}
       </div>
-      <p className="mt-4 text-sm font-medium">Questions to ask your doctor</p>
-      <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+      <p className="mt-4 text-sm font-medium text-slate-100">Questions to ask your doctor</p>
+      <div className="mt-2 space-y-1 text-sm text-slate-400">
         {sourceChecklist.questions.map((question: string) => (
           <p key={question}>- {question}</p>
         ))}
       </div>
 
-      <p className="mt-4 text-sm font-medium">Common forms you may need</p>
+      <p className="mt-4 text-sm font-medium text-slate-100">Common forms you may need</p>
       <div className="mt-2 space-y-2">
         {sourceChecklist.forms.map((form: string) => (
-          <div key={form} className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-            <span className="text-sm text-muted-foreground">{form}</span>
-            <Button size="sm" variant="outline" onClick={() => downloadTemplate(form)}>
+          <div key={form} className="flex items-center justify-between gap-2 rounded-md border border-slate-700 bg-slate-900/50 px-3 py-2">
+            <span className="text-sm text-slate-400">{form}</span>
+            <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700" onClick={() => downloadTemplate(form)}>
               Generate
             </Button>
           </div>
@@ -134,11 +183,11 @@ export function AppointmentGuide({ procedure }: AppointmentGuideProps) {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onClick={downloadChecklist}>
+        <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700" onClick={downloadChecklist}>
           <Download className="mr-1 h-4 w-4" />
           Download Checklist
         </Button>
-        <Button size="sm" onClick={askForMoreHelp}>
+        <Button size="sm" className="bg-teal-500 hover:bg-teal-600 text-white" onClick={askForMoreHelp}>
           <HelpCircle className="mr-1 h-4 w-4" />
           Ask AI for More Help
         </Button>

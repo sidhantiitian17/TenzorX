@@ -90,14 +90,21 @@ export function ConfidenceScore({
               aria-label={`Confidence ${percentage}% ${label}`}
             >
               {isCompact ? (
-                <div className={cn('min-w-28 rounded-lg border border-border/70 px-2.5 py-2 shadow-sm', colors.bg)}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      Confidence
-                    </span>
-                    <span className={cn('font-mono text-base font-bold tabular-nums leading-none', colors.text)}>
-                      {percentage}%
-                    </span>
+                <div className={cn('min-w-24 rounded-lg border border-border/70 px-3 py-2 shadow-sm', colors.bg)}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Confidence
+                      </span>
+                      <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className={cn('font-mono text-lg font-bold tabular-nums leading-none', colors.text)}>
+                          {percentage}%
+                        </span>
+                        {showLabel && (
+                          <span className={cn('text-xs font-medium', colors.text)}>{label}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <div className="mt-2 h-1.5 w-full rounded-full bg-black/10 dark:bg-white/15">
                     <motion.div
@@ -107,9 +114,6 @@ export function ConfidenceScore({
                       transition={{ duration: 0.8, ease: 'easeOut' }}
                     />
                   </div>
-                  {showLabel && (
-                    <p className={cn('mt-1 text-[11px] font-medium', colors.text)}>{label}</p>
-                  )}
                 </div>
               ) : (
                 <>

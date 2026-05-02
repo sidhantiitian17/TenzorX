@@ -6,9 +6,12 @@ Costs are in INR (pre-geographic adjustment).
 """
 
 import json
+import logging
 from typing import List, Dict, Any
 
 from app.core.nvidia_client import NvidiaClient
+
+logger = logging.getLogger(__name__)
 
 
 PATHWAY_PROMPT = """You are a clinical pathway expert for Indian hospitals.
@@ -32,6 +35,74 @@ Follow this standard pathway structure:
 4. Hospital / ICU Stay
 5. Post-procedure Monitoring
 6. Discharge & Follow-up Care"""
+
+
+CLINICAL_PHASES_PROMPT = """You are a clinical pathway expert for Indian patients.
+Given a medical procedure and its pathway steps, categorize them into 5 clinical phases
+and provide patient-friendly explanations.
+
+Output ONLY valid JSON in this exact format:
+{
+  "clinical_phases": [
+    {
+      "phase": "consultation",
+      "name": "Specialist Consultation",
+      "description": "Initial meeting with specialist to discuss condition and treatment options",
+      "activities": ["Medical history review", "Physical examination", "Treatment discussion"],
+      "cost_min": 500,
+      "cost_max": 2000,
+      "duration": "30-60 minutes",
+      "responsible_party": "Specialist Doctor",
+      "llm_explanation": "This is your first meeting with the specialist who will review your condition, discuss the procedure in detail, and answer your questions. Bring all previous medical reports."
+    },
+    {
+      "phase": "diagnostics",
+      "name": "Pre-Procedure Diagnostics",
+      "description": "Tests and scans to assess your health before the procedure",
+      "activities": ["Blood tests", "ECG", "X-ray/MRI", "Other imaging"],
+      "cost_min": 3000,
+      "cost_max": 10000,
+      "duration": "1-2 days",
+      "responsible_party": "Diagnostics Lab / Hospital",
+      "llm_explanation": "These tests help the doctor understand your current health status and identify any risks before the procedure. You may need to fast before some tests."
+    },
+    {
+      "phase": "procedure",
+      "name": "Core Procedure / Surgery",
+      "description": "The main medical intervention or surgery",
+      "activities": ["Anesthesia", "Surgical procedure", "Implant placement if applicable"],
+      "cost_min": 80000,
+      "cost_max": 200000,
+      "duration": "2-4 hours",
+      "responsible_party": "Surgical Team / Hospital",
+      "llm_explanation": "This is the main treatment phase. You will be under anesthesia during the procedure. The surgical team will monitor you throughout. Family can wait in the designated area."
+    },
+    {
+      "phase": "observation_stay",
+      "name": "Hospital / ICU Stay",
+      "description": "Post-procedure monitoring and recovery in the hospital",
+      "activities": ["ICU monitoring", "Ward recovery", "Pain management", "Medication administration"],
+      "cost_min": 20000,
+      "cost_max": 60000,
+      "duration": "3-5 days",
+      "responsible_party": "Hospital Nursing Staff",
+      "llm_explanation": "After the procedure, you'll be monitored closely to ensure proper recovery. The duration depends on the procedure type and your response to treatment. Visitors may be allowed during visiting hours."
+    },
+    {
+      "phase": "follow_up_medication",
+      "name": "Follow-up Care & Medication",
+      "description": "Post-discharge care, medications, and rehabilitation",
+      "activities": ["Medication pickup", "Physiotherapy sessions", "Follow-up consultations", "Wound care"],
+      "cost_min": 10000,
+      "cost_max": 30000,
+      "duration": "6-8 weeks",
+      "responsible_party": "Patient / Home Care",
+      "llm_explanation": "Recovery continues at home with medications and therapy. Regular follow-ups with the doctor are crucial to monitor healing. Follow all medication instructions carefully."
+    }
+  ]
+}
+
+The 5 phases must be: consultation, diagnostics, procedure, observation_stay, follow_up_medication"""
 
 
 class PathwayEngine:
@@ -111,6 +182,97 @@ class PathwayEngine:
             return json.loads(clean)
         except Exception:
             return []
+
+    def get_clinical_phases(
+        self,
+        procedure: str,
+        pathway_steps: List[Dict[str, Any]],
+        icd10_code: str = ""
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate detailed clinical phases with LLM explanations.
+        Uses fast fallback by default; LLM enhancement is optional for future async processing.
+
+        Args:
+            procedure: Canonical procedure name
+            pathway_steps: Existing pathway steps
+            icd10_code: ICD-10 code
+
+        Returns:
+            List of clinical phase dicts with detailed information
+        """
+        # Use fallback for fast response - LLM call adds too much latency for sync API
+        # Fallback provides quality data instantly based on pathway steps
+        return self._fallback_clinical_phases(procedure, pathway_steps)
+
+    def _fallback_clinical_phases(
+        self,
+        procedure: str,
+        pathway_steps: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Fallback clinical phases when LLM fails."""
+        # Calculate total cost from steps
+        total_min = sum(s.get("cost_min", 0) for s in pathway_steps)
+        total_max = sum(s.get("cost_max", 0) for s in pathway_steps)
+        
+        # Distribute costs across phases
+        return [
+            {
+                "phase": "consultation",
+                "name": "Specialist Consultation",
+                "description": "Initial meeting with specialist to discuss condition and treatment options",
+                "activities": ["Medical history review", "Physical examination", "Treatment discussion"],
+                "cost_min": int(total_min * 0.02),
+                "cost_max": int(total_max * 0.05),
+                "duration": "30-60 minutes",
+                "responsible_party": "Specialist Doctor",
+                "llm_explanation": "This is your first meeting with the specialist who will review your condition, discuss the procedure in detail, and answer your questions. Bring all previous medical reports."
+            },
+            {
+                "phase": "diagnostics",
+                "name": "Pre-Procedure Diagnostics",
+                "description": "Tests and scans to assess your health before the procedure",
+                "activities": ["Blood tests", "ECG", "X-ray/MRI", "Other imaging"],
+                "cost_min": int(total_min * 0.05),
+                "cost_max": int(total_max * 0.1),
+                "duration": "1-2 days",
+                "responsible_party": "Diagnostics Lab / Hospital",
+                "llm_explanation": "These tests help the doctor understand your current health status and identify any risks before the procedure. You may need to fast before some tests."
+            },
+            {
+                "phase": "procedure",
+                "name": "Core Procedure / Surgery",
+                "description": "The main medical intervention or surgery",
+                "activities": ["Anesthesia", "Surgical procedure", "Implant placement if applicable"],
+                "cost_min": int(total_min * 0.6),
+                "cost_max": int(total_max * 0.65),
+                "duration": "2-4 hours",
+                "responsible_party": "Surgical Team / Hospital",
+                "llm_explanation": "This is the main treatment phase. You will be under anesthesia during the procedure. The surgical team will monitor you throughout. Family can wait in the designated area."
+            },
+            {
+                "phase": "observation_stay",
+                "name": "Hospital / ICU Stay",
+                "description": "Post-procedure monitoring and recovery in the hospital",
+                "activities": ["ICU monitoring", "Ward recovery", "Pain management", "Medication administration"],
+                "cost_min": int(total_min * 0.2),
+                "cost_max": int(total_max * 0.15),
+                "duration": "3-5 days",
+                "responsible_party": "Hospital Nursing Staff",
+                "llm_explanation": "After the procedure, you'll be monitored closely to ensure proper recovery. The duration depends on the procedure type and your response to treatment. Visitors may be allowed during visiting hours."
+            },
+            {
+                "phase": "follow_up_medication",
+                "name": "Follow-up Care & Medication",
+                "description": "Post-discharge care, medications, and rehabilitation",
+                "activities": ["Medication pickup", "Physiotherapy sessions", "Follow-up consultations", "Wound care"],
+                "cost_min": int(total_min * 0.13),
+                "cost_max": int(total_max * 0.05),
+                "duration": "6-8 weeks",
+                "responsible_party": "Patient / Home Care",
+                "llm_explanation": "Recovery continues at home with medications and therapy. Regular follow-ups with the doctor are crucial to monitor healing. Follow all medication instructions carefully."
+            }
+        ]
 
 
 # =============================================================================

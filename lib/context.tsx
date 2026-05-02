@@ -51,11 +51,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         costEstimate: action.payload,
+        resultsPanelOpen: action.payload !== null,
       };
     case 'SET_CLINICAL_MAPPING':
       return {
         ...state,
         clinicalMapping: action.payload,
+        resultsPanelOpen: action.payload !== null,
       };
     case 'SET_PATIENT_PROFILE':
       return {

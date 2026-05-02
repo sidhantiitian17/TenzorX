@@ -131,8 +131,8 @@ export function ResultsControls({ totalCount, visibleCount }: ResultsControlsPro
             onClick={() => dispatch({ type: 'SET_FILTERS', payload: { tier: option.value } })}
             className={
               state.filters.tier === option.value
-                ? 'rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground'
-                : 'rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground'
+                ? 'rounded-full bg-teal-500 px-3 py-1.5 text-xs font-medium text-white'
+                : 'rounded-full bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200'
             }
           >
             {option.label}
@@ -142,8 +142,8 @@ export function ResultsControls({ totalCount, visibleCount }: ResultsControlsPro
           onClick={() => dispatch({ type: 'SET_FILTERS', payload: { nabhOnly: !state.filters.nabhOnly } })}
           className={
             state.filters.nabhOnly
-              ? 'rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white'
-              : 'rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground'
+              ? 'rounded-full bg-teal-500 px-3 py-1.5 text-xs font-medium text-white'
+              : 'rounded-full bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200'
           }
         >
           NABH Only

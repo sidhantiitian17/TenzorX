@@ -28,6 +28,7 @@ from app.api.routes.save_result import router as save_result_router
 from app.api.routes.form_template import router as form_template_router
 from app.api.routes.lender import router as lender_router
 from app.api.routes.websocket import router as websocket_router
+from app.api.routes.procedure_detection import router as procedure_detection_router
 from app.core.config import settings
 
 # ============================================================================
@@ -233,11 +234,13 @@ app.include_router(form_template_router, prefix=settings.API_V1_STR)
 app.include_router(lender_router, prefix=settings.API_V1_STR)
 # WebSocket /ws/chat/{session_id} - Streaming responses
 app.include_router(websocket_router)
+# POST /api/detect-procedure - Real-time procedure detection
+app.include_router(procedure_detection_router, prefix=settings.API_V1_STR)
 
 logger.info(f"✅ API routes registered under {settings.API_V1_STR}")
 logger.info("Routes: triage, hospitals, chat, cost-estimate, loan-eligibility,")
 logger.info("        compare, explain, emi-calculate, session, feedback,")
-logger.info("        save-result, form-template, lender, websocket")
+logger.info("        save-result, form-template, lender, websocket, detect-procedure")
 
 
 # ============================================================================

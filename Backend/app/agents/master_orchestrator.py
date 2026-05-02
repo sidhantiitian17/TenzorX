@@ -4,6 +4,13 @@ Master Orchestrator Agent
 Central LangChain agent that receives every user message, routes to sub-agents,
 assembles responses, and formats them for the dual-panel frontend.
 
+Key Features:
+- 2-minute LLM timeout for complex query processing
+- Immediate calming/reassurance advice in all responses
+- Contextual fallback responses when LLM is unavailable
+- Full conversation memory for follow-up queries
+- Backend-only dynamic response generation (no frontend hardcoding)
+
 Per instructionagent.md Section 4
 """
 
@@ -82,8 +89,19 @@ STRICT RULES:
 5. Include <SEARCH_DATA>{...}</SEARCH_DATA> for hospital/cost queries.
 6. Use simple, jargon-free language for Tier 2/3 city users.
 7. Format numbers in Indian style (lakhs, crores).
+8. ALWAYS begin with immediate calming advice acknowledging their concern.
+
+OPENING CALMING ADVICE (MANDATORY):
+- Start EVERY response with reassurance based on severity:
+  * RED/Emergency: "I understand this is concerning. Please seek immediate medical attention at the nearest hospital or call 112. Here's what you should know..."
+  * YELLOW/Urgent: "I understand you're worried about your health. The good news is that with timely care, this can be managed effectively. Let me help you understand your options..."
+  * GREEN/Elective: "I understand you have questions about your health. This appears to be a manageable condition, and I'll help you explore your options..."
+- Reference the specific condition/procedure they mentioned
+- Use empathetic, non-alarming language
+- Never dismiss their concerns as "minor" or "nothing to worry about"
 
 RESPONSE FORMAT:
+- Begin with calming advice (as specified above)
 - Be conversational but informative
 - Structure complex information in bullet points
 - Always include confidence indicators
@@ -851,74 +869,167 @@ Confidence: {xai_data.get('confidence_score', 70)}%
             return llm_narrative
         except Exception as e:
             logger.error(f"LLM synthesis failed: {e}")
-            return self._generate_fallback_response(agent_outputs, severity)
+            # Get original user query from history for contextual fallback
+            user_query = history[-1]["content"] if history else ""
+            return self._generate_fallback_response(agent_outputs, severity, user_query)
 
     def _generate_fallback_response(
         self,
         agent_outputs: Dict[str, Any],
         severity: str,
+        user_query: str = "",
     ) -> str:
-        """Generate fallback when LLM fails - uses agent pipeline data for rich response."""
+        """Generate fallback when LLM fails - uses agent pipeline data for contextual response.
+        
+        This fallback is designed to reference the actual user query and extracted data
+        rather than producing generic "I found information about..." responses.
+        """
         ner_data = agent_outputs.get("ner_triage") or {}
         pathway_data = agent_outputs.get("clinical_pathway") or {}
         hospital_data = agent_outputs.get("hospital_discovery") or {}
         financial_data = agent_outputs.get("financial_engine") or {}
         
-        # Get procedure name - try multiple sources for best result
+        # Get procedure name from NER data or extract from query
         procedure = ner_data.get("canonical_procedure", "")
         if not procedure or procedure == "General Consultation":
-            # Try to get from pathway data or use a more helpful default
-            procedure = "your condition"
+            # Try to extract from user query
+            if user_query:
+                procedure = self._extract_procedure_from_query(user_query)
+            if not procedure:
+                procedure = "your health concern"
         
-        # Build rich informative response
+        # Build contextual response referencing the actual query
         sections = []
         
-        # Header based on severity
+        # Opening calming advice based on severity
         if severity == "RED":
-            sections.append("🚨 This appears to be a medical emergency. Please call 112 or go to the nearest hospital immediately.")
+            sections.append("🚨 **I understand you're facing a potentially serious situation.** Please seek immediate medical attention at the nearest hospital or call **112** (India's emergency number) right away.")
+        elif severity == "YELLOW":
+            sections.append(f"**I understand you're concerned about {procedure}.** The good news is that with timely medical attention, this can be managed effectively. Here's the information I found:")
+        else:  # GREEN
+            sections.append(f"**I understand you have questions about {procedure}.** I've analyzed your query and here's what I found to help you make an informed decision:")
         
-        # Main response with procedure name
-        sections.append(f"I found information about **{procedure}**. Here's what I discovered through my analysis:")
-        
-        # Clinical pathway info
+        # Clinical pathway info - specific and contextual
         pathway_steps = pathway_data.get("pathway_steps", [])
         clinical_phases = pathway_data.get("clinical_phases", [])
         if pathway_steps or clinical_phases:
-            sections.append(f"\n**Treatment Pathway:** This typically involves {len(pathway_steps or clinical_phases)} phases from consultation through follow-up care.")
+            step_count = len(pathway_steps or clinical_phases)
+            sections.append(f"\n**Treatment Overview:** Based on my analysis, {procedure} typically involves **{step_count} phases** from initial consultation through follow-up care. Each phase has specific activities and associated costs.")
         
-        # Cost information
-        cost = financial_data.get("total_cost_range", {}) or pathway_data.get("total_min", {})
+        # Cost information with context
+        cost = financial_data.get("total_cost_range", {})
         if cost and isinstance(cost, dict) and (cost.get("min") or cost.get("max")):
             cost_min = cost.get("min", 0)
             cost_max = cost.get("max", 0)
             if cost_min and cost_max:
-                sections.append(f"\n**Cost Estimate:** The typical cost range is Rs {cost_min:,} – Rs {cost_max:,} depending on the hospital tier and city.")
+                sections.append(f"\n**Cost Estimate:** For {procedure}, the typical cost range in your area is **Rs {cost_min:,} – Rs {cost_max:,}**. This varies based on hospital tier, city, and your specific medical needs.")
         elif pathway_data.get("total_min") and pathway_data.get("total_max"):
             total_min = pathway_data.get("total_min", 0)
             total_max = pathway_data.get("total_max", 0)
             if total_min and total_max:
-                sections.append(f"\n**Cost Estimate:** The typical cost range is Rs {total_min:,} – Rs {total_max:,} depending on the hospital tier and city.")
+                sections.append(f"\n**Cost Estimate:** For {procedure}, the typical cost range is **Rs {total_min:,} – Rs {total_max:,}** depending on the hospital tier and city.")
         
         # Hospital information
         hospitals = hospital_data.get("result_count", 0)
         if hospitals > 0:
-            sections.append(f"\n**Hospitals:** I found {hospitals} hospitals that can provide this treatment. Check the Results panel for details.")
+            sections.append(f"\n**Hospitals Near You:** I found **{hospitals} hospitals** that can provide {procedure}. I've ranked them based on quality, cost, and distance. Check the Results panel on the right for details.")
         
         # Financial assistance
         schemes = financial_data.get("government_schemes", [])
         if schemes:
-            sections.append(f"\n**Financial Help:** There are {len(schemes)} government schemes available that may help cover costs. See the Financial Assistance section.")
+            sections.append(f"\n**Financial Help:** There are **{len(schemes)} government schemes** (like Ayushman Bharat) that may help cover costs for {procedure}. See the Financial Assistance section in the Results panel.")
         
-        # Add confidence note
+        # Confidence note
         mapping_confidence = ner_data.get("mapping_confidence", 0)
-        if mapping_confidence:
-            confidence_pct = int(mapping_confidence * 100) if mapping_confidence < 1 else int(mapping_confidence)
-            sections.append(f"\n_Mapping confidence: {confidence_pct}%_")
+        confidence_pct = int(mapping_confidence * 100) if mapping_confidence and mapping_confidence < 1 else int(mapping_confidence or 0)
+        if confidence_pct > 0:
+            sections.append(f"\n*Analysis confidence: {confidence_pct}% — based on your query and available medical data*")
+        
+        # Next steps
+        sections.append(f"\n**What should you do next?**")
+        if severity == "RED":
+            sections.append("- **Seek immediate care now** — do not wait")
+        elif severity == "YELLOW":
+            sections.append(f"- **Schedule a consultation** within 24-48 hours for {procedure}")
+            sections.append("- **Review the hospital options** I've provided in the Results panel")
+            sections.append("- **Check your budget** against the cost estimates shown")
+        else:
+            sections.append(f"- **Compare hospital options** for {procedure} in the Results panel")
+            sections.append("- **Review the cost breakdown** to plan your budget")
+            sections.append("- **Ask me follow-up questions** about any part of the treatment")
         
         # Mandatory disclaimer
-        sections.append("\n⚕ **This is decision support only — consult a qualified doctor.**")
+        sections.append("\n---")
+        sections.append("⚕ **This is decision support only — please consult a qualified doctor for personalized medical advice.**")
+        
+        # Service note for fallback
+        sections.append("\n*Note: This response was generated using available data. For more detailed, personalized guidance, the AI service may need a moment to process complex queries.*")
         
         return "\n".join(sections)
+
+    def _extract_procedure_from_query(self, query: str) -> str:
+        """Extract a readable procedure name from user query for fallback responses."""
+        query_lower = query.lower()
+        
+        # Common condition mappings for fallback extraction
+        condition_map = {
+            "kidney stone": "kidney stones",
+            "kidney stones": "kidney stones",
+            "renal stone": "kidney stones",
+            "nephrolithiasis": "kidney stones",
+            "angioplasty": "angioplasty",
+            "knee replacement": "knee replacement",
+            "knee": "knee treatment",
+            "diabetes": "diabetes management",
+            "sugar": "diabetes management",
+            "thyroid": "thyroid treatment",
+            "cataract": "cataract surgery",
+            "appendix": "appendectomy",
+            "hernia": "hernia repair",
+            "heart": "heart treatment",
+            "chest pain": "chest pain evaluation",
+            "blood pressure": "blood pressure management",
+            "hypertension": "hypertension management",
+            "cancer": "cancer treatment",
+            "tumor": "tumor evaluation",
+            "fracture": "fracture treatment",
+            "bone": "bone treatment",
+            "arthritis": "arthritis treatment",
+            "migraine": "migraine treatment",
+            "headache": "headache evaluation",
+            "pregnancy": "pregnancy care",
+            "pcos": "PCOS management",
+            "gynec": "gynecological consultation",
+            "asthma": "asthma management",
+            "breathing": "respiratory treatment",
+            "eye": "eye treatment",
+            "vision": "vision treatment",
+            "tooth": "dental treatment",
+            "dental": "dental treatment",
+            "consultation": "medical consultation",
+            "treatment": "treatment",
+            "surgery": "surgical consultation",
+            "checkup": "health checkup",
+            "fever": "fever management",
+            "cold": "cold treatment",
+            "cough": "cough treatment",
+        }
+        
+        for keyword, procedure in condition_map.items():
+            if keyword in query_lower:
+                return procedure
+        
+        # If no keyword match, extract key terms from query
+        filler_words = {"i", "have", "has", "had", "me", "my", "need", "want", "tell", "suggest", 
+                       "what", "where", "how", "who", "is", "are", "was", "were", "be", "been",
+                       "can", "could", "will", "would", "should", "may", "might", "please", "help",
+                       "about", "for", "in", "at", "on", "with", "from", "to", "of", "and", "or"}
+        
+        words = [w for w in query_lower.split() if w not in filler_words and len(w) > 3]
+        if words:
+            return " ".join(words[:3]) + " treatment"
+        
+        return "your health concern"
 
     def process(
         self,

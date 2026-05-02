@@ -148,6 +148,50 @@ class PathwayEngine:
              "typical_duration": "6-12 weeks",
              "cost_range": {"min": 8000, "max": 20000}},
         ],
+        "nephrolithiasis": [
+            {"step": 1, "name": "Initial Consultation & Imaging",
+             "description": "Urology consultation, Ultrasound/KUB X-ray, Blood/Urine tests",
+             "typical_duration": "1 day",
+             "cost_range": {"min": 3000, "max": 8000}},
+            {"step": 2, "name": "Stone Analysis & Treatment Planning",
+             "description": "CT scan (if needed), stone size/location assessment, treatment selection (ESWL/PCNL/URS)",
+             "typical_duration": "1-2 days",
+             "cost_range": {"min": 8000, "max": 20000}},
+            {"step": 3, "name": "Stone Removal Procedure",
+             "description": "ESWL (shock wave), PCNL (keyhole), or URS (ureteroscopy) depending on stone",
+             "typical_duration": "1-2 hours (day care or 1 night)",
+             "cost_range": {"min": 60000, "max": 150000}},
+            {"step": 4, "name": "Hospital Stay & Recovery",
+             "description": "Post-procedure monitoring, pain management, stent removal (if placed)",
+             "typical_duration": "1-3 days",
+             "cost_range": {"min": 15000, "max": 40000}},
+            {"step": 5, "name": "Follow-up & Prevention",
+             "description": "Follow-up imaging, dietary counseling, stone prevention measures",
+             "typical_duration": "2-4 weeks",
+             "cost_range": {"min": 3000, "max": 8000}},
+        ],
+        "kidney stone removal": [
+            {"step": 1, "name": "Initial Consultation & Imaging",
+             "description": "Urology consultation, Ultrasound/KUB X-ray, Blood/Urine tests",
+             "typical_duration": "1 day",
+             "cost_range": {"min": 3000, "max": 8000}},
+            {"step": 2, "name": "Stone Analysis & Treatment Planning",
+             "description": "CT scan (if needed), stone size/location assessment, treatment selection (ESWL/PCNL/URS)",
+             "typical_duration": "1-2 days",
+             "cost_range": {"min": 8000, "max": 20000}},
+            {"step": 3, "name": "Stone Removal Procedure",
+             "description": "ESWL (shock wave), PCNL (keyhole), or URS (ureteroscopy) depending on stone",
+             "typical_duration": "1-2 hours (day care or 1 night)",
+             "cost_range": {"min": 60000, "max": 150000}},
+            {"step": 4, "name": "Hospital Stay & Recovery",
+             "description": "Post-procedure monitoring, pain management, stent removal (if placed)",
+             "typical_duration": "1-3 days",
+             "cost_range": {"min": 15000, "max": 40000}},
+            {"step": 5, "name": "Follow-up & Prevention",
+             "description": "Follow-up imaging, dietary counseling, stone prevention measures",
+             "typical_duration": "2-4 weeks",
+             "cost_range": {"min": 3000, "max": 8000}},
+        ],
     }
 
     def __init__(self):
@@ -222,6 +266,25 @@ class PathwayEngine:
             total_min = sum(s.get("cost_min", 0) for s in pathway_steps)
         if total_max == 0:
             total_max = sum(s.get("cost_max", 0) for s in pathway_steps)
+        
+        # Safety fallback: if no pathway steps and no costs, use cost_engine defaults
+        if total_min == 0 and total_max == 0 and procedure:
+            from app.services.cost_engine import _resolve_base_price
+            try:
+                base_price, matched_key = _resolve_base_price(procedure)
+                if base_price > 0:
+                    # Use base price as total, with some variance for range
+                    total_min = int(base_price * 0.7)  # 70% of base as min
+                    total_max = int(base_price * 1.3)  # 130% of base as max
+                    logger.info(f"Using cost_engine fallback for '{procedure}' (matched: {matched_key}): Rs {total_min:,} - {total_max:,}")
+            except Exception as e:
+                logger.warning(f"Could not resolve base price for '{procedure}': {e}")
+        
+        # Ultimate fallback if still zero
+        if total_min == 0 and total_max == 0:
+            total_min = 50000  # Minimum reasonable cost
+            total_max = 150000  # Maximum reasonable cost
+            logger.warning(f"Using ultimate cost fallback for '{procedure}': Rs {total_min:,} - {total_max:,}")
         
         # Distribute costs across phases
         return [

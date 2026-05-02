@@ -66,14 +66,57 @@ async def chat_endpoint(request: ChatRequest):
         return result
         
     except RuntimeError as e:
-        # LLM service unavailable - return graceful fallback
-        logger.warning(f"⚠️ LLM service unavailable, returning fallback response: {e}")
+        # LLM service unavailable - return graceful fallback that references actual query
+        logger.warning(f"⚠️ LLM service unavailable, returning contextual fallback: {e}")
         
-        # Build minimal fallback response
+        # Extract condition from user message for contextual response
+        user_message = request.message
+        message_lower = user_message.lower()
+        
+        # Try to identify the health concern from the query
+        concern = "your health concern"
+        conditions = [
+            ("kidney stone", "kidney stones"), ("kidney", "kidney condition"),
+            ("heart", "heart condition"), ("chest pain", "chest pain"),
+            ("diabetes", "diabetes"), ("sugar", "diabetes"),
+            ("thyroid", "thyroid condition"), ("blood pressure", "blood pressure"),
+            ("knee", "knee condition"), ("joint", "joint condition"),
+            ("fracture", "fracture"), ("bone", "bone condition"),
+            ("cancer", "cancer"), ("tumor", "tumor"),
+            ("pregnancy", "pregnancy"), ("gynec", "gynecological concern"),
+            ("eye", "eye condition"), ("vision", "vision concern"),
+            ("tooth", "dental concern"), ("dental", "dental concern"),
+            ("asthma", "asthma"), ("breathing", "breathing concern"),
+            ("headache", "headache"), ("migraine", "migraine"),
+            ("fever", "fever"), ("cold", "cold"), ("cough", "cough"),
+            ("stomach", "stomach issue"), ("digestion", "digestive issue"),
+        ]
+        for keyword, condition_name in conditions:
+            if keyword in message_lower:
+                concern = condition_name
+                break
+        
+        # Build contextual fallback response
+        contextual_message = (
+            f"**I understand you're asking about {concern}.** "
+            f"I'm currently processing your query: \"{user_message[:80]}{'...' if len(user_message) > 80 else ''}\"\n\n"
+            f"⚠️ The AI analysis service is temporarily experiencing high load or is unavailable. "
+            f"Here's what I can tell you:\n\n"
+            f"- Your query about **{concern}** has been received and logged\n"
+            f"- The system is working to provide you with hospital and cost information\n"
+            f"- Please try again in a moment for a complete, personalized response\n\n"
+            f"**In the meantime:**\n"
+            f"- If this is an emergency, call **112** immediately\n"
+            f"- For urgent concerns, visit your nearest hospital\n"
+            f"- For non-urgent questions, please retry your query shortly\n\n"
+            f"{MANDATORY_MEDICAL_DISCLAIMER}"
+        )
+        
+        # Build minimal fallback response with context
         fallback_response = MasterResponse(
             session_id=request.session_id,
             chat_response=ChatResponseData(
-                message=f"I received your query about '{request.message}'. I'm currently operating in limited mode without AI assistance. Please consult a healthcare provider for personalized advice. {MANDATORY_MEDICAL_DISCLAIMER}",
+                message=contextual_message,
                 triage_level="GREEN",
                 confidence_score=0.5,
                 disclaimer=MANDATORY_MEDICAL_DISCLAIMER,

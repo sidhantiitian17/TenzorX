@@ -202,5 +202,87 @@
         "typical_days": 14
       }
     ]
+  },
+  {
+    "procedure_name": "Nephrolithiasis Treatment",
+    "icd10_code": "N20.0",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "Urology consultation, Ultrasound, KUB X-ray, Blood & Urine tests",
+        "base_cost_min_inr": 3000,
+        "base_cost_max_inr": 8000,
+        "typical_days": 1
+      },
+      {
+        "phase": "diagnostics",
+        "description": "CT scan (if needed), stone size/location assessment",
+        "base_cost_min_inr": 5000,
+        "base_cost_max_inr": 12000,
+        "typical_days": 1
+      },
+      {
+        "phase": "procedure",
+        "description": "ESWL (shock wave), PCNL (keyhole), or URS (ureteroscopy)",
+        "base_cost_min_inr": 60000,
+        "base_cost_max_inr": 150000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "Post-procedure monitoring, pain management, stent removal",
+        "base_cost_min_inr": 15000,
+        "base_cost_max_inr": 40000,
+        "typical_days": 2
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Follow-up imaging, dietary counseling, stone prevention",
+        "base_cost_min_inr": 3000,
+        "base_cost_max_inr": 8000,
+        "typical_days": 30
+      }
+    ]
+  },
+  {
+    "procedure_name": "Kidney Stone Removal",
+    "icd10_code": "N20.0",
+    "components": [
+      {
+        "phase": "pre_procedure",
+        "description": "Urology consultation, Ultrasound, KUB X-ray, Blood & Urine tests",
+        "base_cost_min_inr": 3000,
+        "base_cost_max_inr": 8000,
+        "typical_days": 1
+      },
+      {
+        "phase": "diagnostics",
+        "description": "CT scan (if needed), stone size/location assessment",
+        "base_cost_min_inr": 5000,
+        "base_cost_max_inr": 12000,
+        "typical_days": 1
+      },
+      {
+        "phase": "procedure",
+        "description": "ESWL (shock wave), PCNL (keyhole), or URS (ureteroscopy)",
+        "base_cost_min_inr": 60000,
+        "base_cost_max_inr": 150000,
+        "typical_days": 1
+      },
+      {
+        "phase": "hospital_stay",
+        "description": "Post-procedure monitoring, pain management, stent removal",
+        "base_cost_min_inr": 15000,
+        "base_cost_max_inr": 40000,
+        "typical_days": 2
+      },
+      {
+        "phase": "post_procedure",
+        "description": "Follow-up imaging, dietary counseling, stone prevention",
+        "base_cost_min_inr": 3000,
+        "base_cost_max_inr": 8000,
+        "typical_days": 30
+      }
+    ]
   }
 ]

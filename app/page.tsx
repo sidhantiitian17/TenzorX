@@ -287,11 +287,23 @@ export default function HomePage() {
             city_name: location,
             discount_vs_metro: 0.32,
           },
-          tier_comparison: {
-            budget: { min: 0, max: 0 },
-            mid: chatResponse.cost_estimate?.total || { min: 50000, max: 200000 },
-            premium: { min: 0, max: 0 },
-          },
+          tier_comparison: (() => {
+            const tierData = chatResponse.results_panel?.cost_estimate?.tier_cost_comparison || chatResponse.cost_estimate?.tier_cost_comparison;
+            if (tierData) {
+              return {
+                budget: tierData.budget,
+                mid: tierData.mid_tier,
+                premium: tierData.premium,
+              };
+            }
+            // Fallback: calculate from total cost
+            const total = chatResponse.results_panel?.cost_estimate?.total_cost_range || chatResponse.cost_estimate?.total || { min: 50000, max: 200000 };
+            return {
+              budget: { min: Math.round(total.min * 0.7), max: Math.round(total.max * 0.75) },
+              mid: total,
+              premium: { min: Math.round(total.min * 1.3), max: Math.round(total.max * 1.4) },
+            };
+          })(),
           risk_adjustments: [],
           data_sources: [
             'NVIDIA Mistral LLM Analysis',

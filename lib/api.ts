@@ -479,6 +479,11 @@ export async function callChatAPI(
       cost_breakdown_items?: Array<{ label: string; min: number; max: number }>;
       cost_source?: string;
       geo_multiplier?: number;
+      tier_cost_comparison?: {
+        budget: { min: number; max: number };
+        mid_tier: { min: number; max: number };
+        premium: { min: number; max: number };
+      };
     };
     hospitals?: {
       agent: string;
@@ -591,6 +596,11 @@ export async function callChatAPI(
   cost_estimate?: {
     total: { min: number; max: number };
     components: Record<string, { min: number; max: number }>;
+    tier_cost_comparison?: {
+      budget: { min: number; max: number };
+      mid_tier: { min: number; max: number };
+      premium: { min: number; max: number };
+    };
   };
   hospitals?: Hospital[];
   map_data?: {

@@ -143,7 +143,7 @@ def _call_longcat_api(messages: list[dict[str, str]], session_id: str) -> str:
             LONGCAT_INVOKE_URL,
             headers=headers,
             json=payload,
-            timeout=(0.5, 1)  # (connect timeout, read timeout) - aggressive for <10s total
+            timeout=(5, 120)  # (connect timeout, read timeout) - 2 min read for complex query processing
         )
 
         # Check for HTTP errors
@@ -161,7 +161,7 @@ def _call_longcat_api(messages: list[dict[str, str]], session_id: str) -> str:
         return content.strip()
 
     except requests.exceptions.Timeout:
-        error_msg = f"Longcat AI API timeout (3s exceeded) for session_id={session_id}"
+        error_msg = f"Longcat AI API timeout (120s exceeded) for session_id={session_id}"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
 

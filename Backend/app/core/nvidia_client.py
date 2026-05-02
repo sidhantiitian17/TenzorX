@@ -116,7 +116,7 @@ class LLMClient:
                 LONGCAT_API_URL,
                 headers=self.headers,
                 json=payload,
-                timeout=(0.5, 1)  # (connect timeout, read timeout) - aggressive for <10s total
+                timeout=(5, 120)  # (connect timeout, read timeout) - 2 min read for complex query processing
             )
             response.raise_for_status()
             logger.info(f"✅ Longcat AI LLM API response received: {response.status_code}")

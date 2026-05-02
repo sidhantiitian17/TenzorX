@@ -19,8 +19,7 @@ def test_longcat_orchestration():
     from app.agents.master_orchestrator import MasterOrchestrator
     from app.core.config import settings
     
-    api_key_status = "[SET]" if settings.LONGCAT_API_KEY else "[NOT SET]"
-    print(f"LONGCAT_API_KEY: {api_key_status}")
+    print("LONGCAT configuration loaded")
     print(f"LONGCAT_BASE_URL: {settings.LONGCAT_BASE_URL}")
     print()
     

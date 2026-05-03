@@ -265,7 +265,7 @@ class AppointmentAgent:
         
         deleted = len(_appointment_store[session_id]) < original_count
         if deleted:
-            logger.info(f"Deleted appointment {appointment_id} from session {session_id}")
+            logger.info("Deleted appointment from session")
         
         return deleted
 

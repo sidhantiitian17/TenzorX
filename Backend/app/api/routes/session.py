@@ -150,7 +150,7 @@ async def update_appointment_status(
         if not updated_appointment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Appointment '{update.appointment_id}' not found in session '{session_id}'",
+                detail="Appointment not found in session",
             )
         
         logger.info("Appointment updated successfully")
@@ -196,10 +196,10 @@ async def delete_appointment(session_id: str, appointment_id: str):
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Appointment '{appointment_id}' not found",
+                detail="Appointment not found",
             )
         
-        return {"success": True, "message": f"Appointment {appointment_id} removed"}
+        return {"success": True, "message": "Appointment removed"}
         
     except HTTPException:
         raise

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 api_key = os.getenv("NVIDIA_API_KEY", "")
-print(f"API Key: {api_key[:30]}..." if api_key else "API Key: NOT SET")
+print("API Key: CONFIGURED" if api_key else "API Key: NOT SET")
 
 if not api_key or "your-nvidia-api-key" in api_key:
     print("\n❌ NVIDIA_API_KEY not configured properly!")

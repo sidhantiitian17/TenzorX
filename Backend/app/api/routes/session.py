@@ -188,7 +188,7 @@ async def delete_appointment(session_id: str, appointment_id: str):
         Success message
     """
     try:
-        logger.info(f"Deleting appointment {appointment_id} from session {session_id}")
+        logger.info("Deleting appointment from session")
         
         appointment_agent = get_appointment_agent()
         deleted = appointment_agent.delete_appointment(session_id, appointment_id)
@@ -204,7 +204,7 @@ async def delete_appointment(session_id: str, appointment_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to delete appointment: {e}")
+        logger.error("Failed to delete appointment")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete appointment: {str(e)}",
